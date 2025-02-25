@@ -1,0 +1,1 @@
+{"name":"idle","duration":2,"tracks":[{"name":"rotator.quaternion","times":[0,1,2],"values":[0,0,0,1,0,0,0,1,0,0,0,1],"type":"quaternion"}],"uuid":"739da640-d87f-4c83-9082-a1eb6593b6da","blendMode":2500}

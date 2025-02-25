@@ -1,0 +1,1 @@
+{"name":"rotate","duration":2,"tracks":[{"name":"root.quaternion","times":[0,0.5,1],"values":[0,0,0,1,0,0,0,1,0,0,0,1],"type":"quaternion"},{"name":"rotator.quaternion","times":[0,1,2],"values":[0,0,0,1,0,-0.7071067690849304,0,0.7071067690849304,0,-1,0,6.123234262925839e-17],"type":"quaternion"}],"uuid":"ec8046a3-ff1d-47ae-b198-b174716f9e62","blendMode":2500}
