@@ -10,7 +10,7 @@ import RogueCharacter from '@RE/RogueEngine/rogue-character/RogueCharacter.re';
 import RapierBody from '@RE/RogueEngine/rogue-rapier/Components/RapierBody.re';
 import RapierCollider from '@RE/RogueEngine/rogue-rapier/Components/Colliders/RapierCollider';
 import { drawLine } from 'Assets/Helpers/util';
-
+import Warehouse from './Warehouse.re';
 
 RE.Input.bindButton("Fire", { Mouse: 0 });
 RE.Input.bindButton("Aim", { Mouse: 2, Gamepad: 6 });
@@ -29,6 +29,11 @@ RE.Input.bindAxes("Look", {
 const q1 = new THREE.Quaternion();
 const q2 = new THREE.Quaternion();
 const q3 = new THREE.Quaternion();
+
+const packageWeaponMap = {
+  "ammocan": "Chaingun",
+  "IDK": "AK47"
+}
 
 @RE.registerComponent
 export default class KTFPSController extends RE.Component {
@@ -208,21 +213,41 @@ export default class KTFPSController extends RE.Component {
         const intersectingObject = intersection.object
 
 
-        // get a handle on the Weapon
-        const weaponComp = RE.getComponent(KTFPSWeapon, intersectingObject, true)
-        RE.Debug.log(`weaponComp=${JSON.stringify(weaponComp)}`)
-
-        if (!weaponComp) {
-          RE.Debug.logError(`failed to get Package Component of intersectingObject.name=${intersectingObject.name}`)
+        // get a handle on the Weapon package, aka, "item"
+        // find the KTFPSWeapon that maps to that package
+        const weaponName = packageWeaponMap[intersectingObject.name]
+        if (!weaponName) {
+          RE.Debug.logWarning("intersecting Object did not have a name")
           return;
         }
+
+        RE.Debug.log(`Looking for weaponName=${weaponName} from intersectingObject.name=${intersectingObject.name}`)
+
+
+        // get the appropriate weapon from the warehouse
+        const warehouseObject = RE.Runtime.scene.getObjectByName("SolFront Warehouse") as THREE.Object3D;
+        const warehouseComp = Warehouse.get(warehouseObject)
+        const weaponPrefab = warehouseComp.findItemPrefab(weaponName)
+
+        if (!weaponPrefab) {
+          RE.Debug.logError(`failed to get ${weaponName} prefab`)
+          return;
+        }
+        // const weaponComponent = KTFPSWeapon.get(weaponObject)
+
 
         let rangeToWeapon = intersection.distance
         let isInRange = rangeToWeapon <= this.maxPickupDistance
         let isFreeSlot = this.weapons.length < this.maxSlots
         if (isFreeSlot && isInRange) {
-          RE.Debug.log(`Loading weapon #{weaponComp.name}`)
-          this.loadWeapon(weaponComp)
+          const weaponObject = weaponPrefab.instantiate()
+          this.loadWeapon(weaponObject)
+
+          let target = RE.getComponent(RapierBody, intersectingObject, true)
+          if (target.object3d.parent) {
+            target.object3d.parent.remove(target.object3d)
+          }
+
         }
 
 
@@ -265,6 +290,8 @@ export default class KTFPSController extends RE.Component {
     this.headBobbing();
   }
 
+
+
   getShootInput() {
     return this.fpsWeapon.firingMode === 0 ? RE.Input.getDown("Fire") : RE.Input.getPressed("Fire");
   }
@@ -306,8 +333,10 @@ export default class KTFPSController extends RE.Component {
     }
   }
 
-  loadWeapon(weapon: KTFPSWeapon) {
+  loadWeapon(weaponObject: THREE.Object3D) {
     let slot = this.weapons.length
+    this.weapons[slot] = weaponObject
+    RE.Debug.log(`Loading weapon ${weaponObject.name} into slot=${slot}`)
 
     this.selectWeapon(slot)
   }

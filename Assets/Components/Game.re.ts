@@ -1,6 +1,8 @@
 import RogueCharacter from '@RE/RogueEngine/rogue-character/RogueCharacter.re';
+import { randomInt } from 'Assets/Helpers/util';
 import * as RE from 'rogue-engine';
 import { Audio } from 'three';
+import * as THREE from 'three';
 
 @RE.registerComponent
 
@@ -16,13 +18,13 @@ import { Audio } from 'three';
 export default class Game extends RE.Component {
 
   @RE.props.num() kills: number = 0;
+  @RE.props.num() deaths: number = 0;
   @RE.props.num() easterEggs: number = 0;
 
   @RE.props.num() killsToWin: number = 15;
 
   @RE.props.checkbox() win: boolean = false;
   @RE.props.checkbox() lose: boolean = false;
-  @RE.props.checkbox() fallOut: boolean = false; // player fell off the map
 
   @RE.props.audio() winSFX: Audio;
   @RE.props.audio() loseSFX: Audio;
@@ -30,6 +32,14 @@ export default class Game extends RE.Component {
 
   @RE.props.text() playerSpawn: string = "PlayerSpawn";
   @RE.props.prefab() playerPrefab: RE.Prefab;
+
+  get spawnpointsContainer() {
+    let spawnpointsContainer = RE.Runtime.scene.getObjectByName("PlayerSpawnPoints") as THREE.Object3D;
+    if (!spawnpointsContainer) {
+      throw new Error("PlayerSpawnPoints container is missing!")
+    }
+    return spawnpointsContainer
+  }
 
   awake() {
 
@@ -44,7 +54,7 @@ export default class Game extends RE.Component {
   }
 
   loseCondition() {
-    return this.fallOut
+    return this.deaths > 0
   }
 
   doWin() {
@@ -58,11 +68,15 @@ export default class Game extends RE.Component {
   }
 
   assertPlayer() {
-    let player = RE.getComponentByName("Player")
+    let player = RE.Runtime.scene.getObjectByName("FirstPersonCharacter") as THREE.Object3D;
     if (!player) {
-      let playerGroup = RE.App.currentScene.children.find((obj) => obj.name === 'Players')
-      this.playerPrefab.instantiate(playerGroup)
-
+      let playerGroup = RE.Runtime.scene.getObjectByName("Players")
+      if (!playerGroup) RE.Debug.logError("Cannot find Players group");
+      let playerObject = this.playerPrefab.instantiate(playerGroup)
+      const spawnPointCount = this.spawnpointsContainer.children.length
+      let selectedSpawnPoint = this.spawnpointsContainer.children[randomInt(0, spawnPointCount)]
+      // RE.Debug.log(`spawnPointCount=${spawnPointCount} selectedSpawnPoint=${selectedSpawnPoint.name}`)
+      selectedSpawnPoint.getWorldPosition(playerObject.position)
     }
   }
 

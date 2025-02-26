@@ -2,17 +2,11 @@ import * as RE from 'rogue-engine';
 import * as THREE from 'three';
 import RapierThirdPersonController from '@RE/RogueEngine/rogue-rapier/Components/Controllers/RapierThirdPersonController.re';
 import { randomRange, randomInt } from '../Helpers/util';
-import Armory from './Warehouse.re';
 import Warehouse from './Warehouse.re';
-import Module from './Module.re'
+import { Vector3 } from 'three.quarks';
 
 RE.Input.bindButton("Request", { Keyboard: 'KeyR' })
 
-type Dropship = {
-  obj: THREE.Object3D;
-  startPos: THREE.Vector3;
-  targetPos: THREE.Vector3;
-}
 
 enum State {
   Hovering,
@@ -37,28 +31,28 @@ function lerpV3(a: THREE.Vector3, b: THREE.Vector3, t: number, h: number) {
 export default class DropshipController extends RE.Component {
 
   @RE.props.num() speed: number;
-  @RE.props.num() caution: number;
+  @RE.props.num(1) caution: number;
   @RE.props.num() baseY: number;
   @RE.props.num() requestX: number;
   @RE.props.num() requestY: number;
   @RE.props.num() requestZ: number;
   @RE.props.num() dropTimeout: number = 0.2;
   @RE.props.num() dropTimeCounter: number = 0.2;
+  @RE.props.num() dropSpreadSize: number = 1;
   @RE.props.checkbox() rateLimited: boolean = false;
   @RE.props.num() itemCounter: number = 0;
   @RE.props.select() state = 0;
-  @RE.props.object3d() armoryObject: THREE.Object3D;
   @RE.props.object3d() warehouseObject: THREE.Object3D;
   @RE.props.audio(true) dropSFX: THREE.PositionalAudio;
   @RE.props.audio(true) flySFX: THREE.PositionalAudio;
   @RE.props.audio(true) turnSFX: THREE.PositionalAudio;
   @RE.props.audio(true) idleSFX: THREE.PositionalAudio;
+  @RE.props.num() cargoBayYOffset: number = -1;
 
   stateOptions = ["hovering", "turning", "flying", "dropping"];
   itemsContainer: THREE.Object3D;
   qToRequestVector: THREE.Quaternion;
   warehouse: Warehouse;
-  armory: Warehouse;
 
 
   // @RE.props.button() request = () => { 
@@ -85,6 +79,20 @@ export default class DropshipController extends RE.Component {
 
   dropshipsContainer: THREE.Object3D;
 
+  getSpreadOffset(index: number) {
+    RE.Debug.log(`getSpreadOffset index=${index}`)
+
+    // if there are multiple items in the order, spread them out
+    // otherwise, drop the single item in the order on the exact coordinate 
+    // (necessary for mission 001 when a tower kills a NPC)
+    if (index > 0) {
+      return new Vector3(randomRange(-2, 2), this.cargoBayYOffset, randomRange(-2, 2))
+    } else {
+      return new Vector3(0, this.cargoBayYOffset, 0)
+    }
+  }
+
+
   /**
    * getRandomEquipmentOrder
    * 
@@ -92,9 +100,14 @@ export default class DropshipController extends RE.Component {
    */
   getRandomEquipmentOrder(): EquipmentOrder {
     // RE.Debug.clear()
-    const availableItems = this.armory.modules.map((m) => m.name)
+    if (!this.warehouse.items || this.warehouse.items.length === 0) {
+      RE.Debug.logError("No items found in warehouse");
+    }
+    const availableItems = this.warehouse.items.map((m) => m.name)
+
+
     // RE.Debug.log(`availableItems as follows. ${JSON.stringify(availableItems)}`)
-    const pos = new THREE.Vector3(randomRange(-10, 10), randomRange(0, 50), randomRange(-10, 10))
+    const pos = new THREE.Vector3(randomRange(-100, 100), randomRange(0, 10), randomRange(-100, 100))
     const itemCount = randomInt(1, 8)
     let items: string[] = []
     for (let i = 0; i < itemCount; i++) {
@@ -115,10 +128,7 @@ export default class DropshipController extends RE.Component {
 
     this.dropshipsContainer = RE.Runtime.scene.getObjectByName("Dropships") as THREE.Object3D;
     this.itemsContainer = RE.Runtime.scene.getObjectByName("Items") as THREE.Object3D;
-    this.armory = RE.getComponent(Warehouse, this.armoryObject)
     this.warehouse = RE.getComponent(Warehouse, this.warehouseObject)
-
-
 
     if (!this.dropshipsContainer) {
       this.dropshipsContainer = new THREE.Object3D();
@@ -127,7 +137,9 @@ export default class DropshipController extends RE.Component {
     }
 
     if (!this.itemsContainer) {
-      this.itemsContainer = RE.Runtime.scene.getObjectByName("Items") as THREE.Object3D;
+      this.itemsContainer = new THREE.Object3D();
+      this.itemsContainer.name = "Items";
+      RE.Runtime.scene.add(this.itemsContainer);
     }
   }
 
@@ -152,15 +164,15 @@ export default class DropshipController extends RE.Component {
 
   }
 
-  controls() {
+  // controls() {
 
-    if (RE.Input.getDown("Request")) {
-      // RE.Debug.log(`REQUEST INPUT WAS PRESSED`)
-      const dropship = RE.Runtime.scene.getObjectByName("Dropship") as THREE.Object3D;
-      if (!dropship) RE.Debug.logError(`failed to get dropship`);
-      else this.queueRequest(this.getRandomEquipmentOrder())
-    }
-  }
+  //   if (RE.Input.getDown("Order Tower")) {
+  //     RE.Debug.log(`REQUEST INPUT WAS PRESSED`)
+  //     const dropship = RE.Runtime.scene.getObjectByName("Dropship") as THREE.Object3D;
+  //     if (!dropship) RE.Debug.logError(`failed to get dropship`);
+  //     else this.queueRequest(this.getRandomEquipmentOrder())
+  //   }
+  // }
 
   update() {
     this.cooldown()
@@ -190,10 +202,13 @@ export default class DropshipController extends RE.Component {
         this.state = State.Flying
       }
     } else if (this.state === State.Flying) {
+
       const distance = this.object3d.position.distanceTo(new THREE.Vector3(this.requestX, this.requestY + (this.baseY * this.caution), this.requestZ))
+
+
       // RE.Debug.clear()
       // const { x, y, z } = this.object3d.position
-      // RE.Debug.log(`x=${x}, requestX=${this.requestX}, y=${y}, requestY=${this.requestY}, z=${z}, requestZ=${this.requestZ} distance=${distance}`)
+      // RE.Debug.log(`requestX=${this.requestX}, requestY=${this.requestY}, requestZ=${this.requestZ} distance=${distance}`)
       if (distance < 10) {
         this.state = State.Dropping;
       } else {
@@ -204,17 +219,17 @@ export default class DropshipController extends RE.Component {
       if (this.queue.length === 0) {
         this.state = State.Hovering
       } else {
-        // RE.Debug.clear()
-        // RE.Debug.log(`dropping. btw queue length is ${this.queue.length}, item length is ${this.queue.at(0)?.items.length}`)
+        RE.Debug.clear()
+        RE.Debug.log(`dropping. btw queue length is ${this.queue.length}, item length is ${this.queue.at(0)?.items.length}`)
         if (this.rateLimited) {
-          // RE.Debug.log('rate limited')
+          RE.Debug.log('rate limited')
         } else {
-          // RE.Debug.log('actually dropping')
+          RE.Debug.log('actually dropping')
           // const order = this.queue.splice(0, 1)
 
           const order = this.queue[0]
           const startItemCount = order.items.length
-          // RE.Debug.log(`order=${JSON.stringify(order)}`)
+          RE.Debug.log(`order=${JSON.stringify(order)}`)
 
 
           const item = order.items.shift()
@@ -224,9 +239,9 @@ export default class DropshipController extends RE.Component {
           } else {
             // RE.Debug.log(`item=${item} simulated drop`)
 
-            const modulePrefab = this.armory.modules.find((m) => m.name === item) || this.warehouse.modules.find((m) => m.name === item)
+            const itemPrefab = this.warehouse.items.find((m) => m.name === item)
 
-            if (!modulePrefab) {
+            if (!itemPrefab) {
               RE.Debug.logError(`Dropship could not find ${item}`)
             } else {
               if (this.flySFX) {
@@ -238,15 +253,18 @@ export default class DropshipController extends RE.Component {
               }
 
 
-              // @todo update this to use the new way of working with Modules
-              const moduleObject = modulePrefab.instantiate(this.itemsContainer)
-              const moduleComponent = RE.getComponent(Module, moduleObject)
+              const itemObject = itemPrefab.instantiate(this.itemsContainer)
+              let itemSpawnPoint = this.object3d.position.clone()
+              itemSpawnPoint.add(this.getSpreadOffset(order.items.length))
+              itemObject.position.copy(itemSpawnPoint)
+
+
+              // const itemComponent = RE.getComponent(Module, itemObject)
               // const itemObject = moduleComponent?.itemComp?.instantiate(this.itemsContainer)
 
               // delete the moduleObject since all we needed from it was the Item
-              this.itemsContainer.remove(moduleObject)
+              // this.itemsContainer.remove(moduleObject)
               // moduleObject.remove()
-              // itemObject.position.copy(this.object3d.position)
 
 
               // const freshObject = itemObject.clone()

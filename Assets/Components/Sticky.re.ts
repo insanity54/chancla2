@@ -5,11 +5,13 @@ import { RigidBodyType } from '@dimforge/rapier3d-compat';
 
 import * as RE from 'rogue-engine';
 import { randomInt, randomRange } from 'Assets/Helpers/util';
+import RogueCharacter from '@RE/RogueEngine/rogue-character/RogueCharacter.re';
 
 @RE.registerComponent
 export default class Sticky extends RE.Component {
 
   @RE.props.audio(true) stickSFX: THREE.PositionalAudio;
+  @RE.props.checkbox() crushing: boolean = false;
 
   @RapierBody.require()
   rapierBody: RapierBody;
@@ -20,10 +22,17 @@ export default class Sticky extends RE.Component {
       RE.Debug.logError(`${this.name} is missing RapierBody, which is required for StickyController.`);
     } else {
       this.rapierBody.onCollisionStart = (info: RapierCollisionInfo) => {
-        // RE.Debug.log(`Collision where I am at y=${this.object3d.position.y}`)
-        // RE.Debug.log(`name=${info.otherBody.name} layers=${JSON.stringify(info.otherBody.object3d.layers)}`)
-        // RE.Debug.clear()
-        // RE.Debug.log(`collision with ${info.otherBody.object3d.name}`)
+        RE.Debug.log(`Collision where I am at y=${this.object3d.position.y}`)
+        RE.Debug.log(`name=${info.otherBody.name} layers=${JSON.stringify(info.otherBody.object3d.layers)}`)
+        RE.Debug.clear()
+        RE.Debug.log(`collision with ${info.otherBody.object3d.name}`)
+
+        // crush the character if the object is Crushing
+        const otherObject = info.otherBody.object3d
+        const otherCharacter = RE.getComponent(RogueCharacter, otherObject, false)
+        if (this.crushing && otherCharacter) {
+          otherCharacter.curHP = 0
+        }
 
         const terrainObjects = RE.Tags.getWithAny('Terrain')
         // RE.Debug.log('terrainObjects list: '+terrainObjects.map((a) => a.name).join(', '))
