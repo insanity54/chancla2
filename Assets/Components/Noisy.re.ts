@@ -17,6 +17,10 @@ export default class Noisy extends RE.Component {
   }
 
   update() {
-    !this.spawnSFX.isPlaying && this.spawnSFX.play()
+    if (this.loop) {
+      if (this.spawnSFX && !this.spawnSFX.isPlaying) {
+        this.spawnSFX.play()
+      }
+    }
   }
 }

@@ -1,8 +1,7 @@
-import RogueCharacter from '@RE/RogueEngine/rogue-character/RogueCharacter.re';
 import * as RE from 'rogue-engine';
 import RapierKinematicCharacterController from '@RE/RogueEngine/rogue-rapier/Components/RapierKinematicCharacterController.re';
 import * as THREE from 'three'
-
+import RogueAnimator from '@RE/RogueEngine/rogue-animator/RogueAnimator.re';
 
 export type TaskSpec = {
     action: string,
@@ -19,14 +18,18 @@ export default class NPCController extends RE.Component {
     @RE.props.text() activeTask: string = '';
     @RE.props.text() activeTaskAction: string = '';
     @RE.props.list.text() tasks: string[] = [];
-
+    @RE.props.checkbox() repeat: boolean = true;
+    @RE.props.num() taskCursor: number = 0;
+    @RE.props.num() taskTimer: number = 0;
 
 
     @RapierKinematicCharacterController.require()
     characterController: RapierKinematicCharacterController;
 
+    @RogueAnimator.require()
+    animator: RogueAnimator;
 
-
+    private taskSpec: TaskSpec;
     private targetDirection = new THREE.Vector3();
     private dummy = new THREE.Object3D();
 
@@ -59,14 +62,19 @@ export default class NPCController extends RE.Component {
         }
     }
 
+    static parseKillTask(task: TaskSpec) {
+        if (task.params.length !== 2) RE.Debug.logError(`parseKillTask expects 2 params. Got ${task.params.length}.`);
+        let [target, duration] = task.params
+        return { target, duration: parseInt(duration) }
+    }
 
 
-    // get characterController() {
-    //     if (!this._characterController) {
-    //         return RapierKinematicCharacterController.get(this.object3d);
-    //     }
-    //     return this._characterController;
-    // }
+
+    static parseIdleTask(task: TaskSpec) {
+        if (task.params.length !== 1) RE.Debug.logError(`parseIdleTask expects 1 params. Got ${task.params.length}.`);
+        let [duration] = task.params
+        return { duration: parseInt(duration) }
+    }
 
     awake() {
         if (!RE.Runtime.isRunning) return;
@@ -74,63 +82,97 @@ export default class NPCController extends RE.Component {
     }
 
     start() {
-        // if (!this.characterController) {
-        //     RE.Debug.logError("NPC is missing a Rapier Kinematic Character Controller!!!!!!!!!!!!!!")
-        // }
+        if (!this.characterController) {
+            RE.Debug.logError("NPC is missing a Rapier Kinematic Character Controller!!!!!!!!!!!!!!")
+        }
     }
 
     update() {
         // this.object3d.getWorldDirection(this.localFWD);
+        this.animator.setBaseAction('idle')
 
-        // this.characterController.movementDirection.x = 0
-        // this.characterController.movementDirection.y = 0
-        // this.characterController.movementDirection.z = 0
+        this.taskTimer += RE.Runtime.deltaTime
+        if (this.activeTask === "") this.loadNextTask();
+        this.processTask()
+    }
 
-        if (this.activeTaskAction === 'idle') {
+    handleIdleTask() {
+        this.animator.mix("idle")
+        this.characterController.movementDirection.x = 0
+        this.characterController.movementDirection.y = 0
+        this.characterController.movementDirection.z = 0
+        const { duration } = NPCController.parseIdleTask(this.taskSpec)
+        if (this.taskTimer > duration) {
+            RE.Debug.log("Idling complete.");
+            this.loadNextTask()
+        }
+    }
+
+
+    /** 
+     * handleKillTask
+     * find a target with that name within (500 distance(?))
+     * look at the target
+     * shoot the target
+     * relocate 3-9 units
+     * repeat
+     */
+    handleKillTask() {
+        this.animator.mix("dance")
+        const { target, duration } = NPCController.parseKillTask(this.taskSpec);
+        this.characterController.movementDirection.x = 0
+        this.characterController.movementDirection.y = 0
+        this.characterController.movementDirection.z = 0
+        // RE.Debug.clear()
+        // RE.Debug.log(`killing ${target} for ${this.taskTimer}/${duration}`);
+        if (this.taskTimer > duration) {
+            RE.Debug.log("Killing done.");
+            this.loadNextTask();
+        }
+    }
+
+    handleWalkTask() {
+        this.animator.mix("walk")
+        const { params } = NPCController.parseWalkTask(this.taskSpec);
+        const [x, y, z] = params;
+        this.destination = new THREE.Vector3(x, y, z);
+        this.translate()
+    }
+
+    // Get the next task and update the cursor
+    loadNextTask(): void {
+        this.resetTaskTimer();
+
+        if (!this.tasks.length) {
+            this.activeTask = "";
             return;
         }
 
-        else if (this.activeTaskAction === 'walk') {
-            // this.setRotation();
-            this.translate();
+        this.activeTask = this.tasks[this.taskCursor];
+
+        // Move to the next task, looping if necessary
+        this.taskCursor = (this.taskCursor + 1) % this.tasks.length;
+    }
+
+    // Parse and process the task
+    processTask(): void {
+        this.taskSpec = NPCController.parseTask(this.activeTask);
+        this.activeTaskAction = this.taskSpec.action;
+
+        switch (this.activeTaskAction) {
+            case 'idle': this.handleIdleTask(); break;
+            case 'walk': this.handleWalkTask(); break;
+            case 'kill': this.handleKillTask(); break
+            default: this.handleIdleTask(); break;
         }
-
-        // let tasks = this.taskList.tasks
-        else if (this.activeTask === '') {
-            // get a task
-            this.getNextTask()
-
-
-            // if (taskSpec.action === 'walk') NPCController.walk(taskSpec.params);
-            // if (taskSpec.action === 'kill') NPCController.kill(taskSpec.params);
-
-        }
-
-        // RE.Debug.log(`tasks=${JSON.stringify(tasks)}`)
-        // * Get the first task in the TaskList
-        // * Parse the task to get the task type, args
-        // * Execute the first task
 
 
     }
 
-
-
-    getNextTask() {
-        this.activeTask = this.tasks.shift() || ''
-
-        const taskSpec: TaskSpec = NPCController.parseTask(this.activeTask)
-
-        this.activeTaskAction = taskSpec.action
-        // run the task
-        if (taskSpec.action === 'walk') {
-            const { action, params } = NPCController.parseWalkTask(taskSpec)
-            const [x, y, z] = params
-            // RE.Debug.log(`params=${JSON.stringify(params)} x=${x}, y=${y}, z=${z}`)
-            this.destination = new THREE.Vector3(x, y, z)
-        }
-
+    resetTaskTimer() {
+        this.taskTimer = 0
     }
+
 
     axesToDestination(): { x: number; y: number } {
         const forward = this.destination.clone().normalize(); // Ensure a unit direction vector
@@ -187,10 +229,9 @@ export default class NPCController extends RE.Component {
 
         // Stop moving if the object is close enough to the destination
         if (distanceToDestination < 1) {
-            RE.Debug.log(`destination ${JSON.stringify(this.destination)} reached`)
+            // RE.Debug.log(`destination ${JSON.stringify(this.destination)} reached`)
             this.inputVelocity.z = 0; // Stop moving
-            this.getNextTask()
-            return;
+            return this.loadNextTask();
         }
 
 
