@@ -22,10 +22,10 @@ export default class Sticky extends RE.Component {
       RE.Debug.logError(`${this.name} is missing RapierBody, which is required for StickyController.`);
     } else {
       this.rapierBody.onCollisionStart = (info: RapierCollisionInfo) => {
-        RE.Debug.log(`Collision where I am at y=${this.object3d.position.y}`)
-        RE.Debug.log(`name=${info.otherBody.name} layers=${JSON.stringify(info.otherBody.object3d.layers)}`)
-        RE.Debug.clear()
-        RE.Debug.log(`collision with ${info.otherBody.object3d.name}`)
+        // RE.Debug.log(`Collision where I am at y=${this.object3d.position.y}`)
+        // RE.Debug.log(`name=${info.otherBody.name} layers=${JSON.stringify(info.otherBody.object3d.layers)}`)
+        // RE.Debug.clear()
+        // RE.Debug.log(`collision with ${info.otherBody.object3d.name}`)
 
         // crush the character if the object is Crushing
         const otherObject = info.otherBody.object3d

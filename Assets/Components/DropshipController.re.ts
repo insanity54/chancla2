@@ -1,7 +1,7 @@
 import * as RE from 'rogue-engine';
 import * as THREE from 'three';
 import RapierThirdPersonController from '@RE/RogueEngine/rogue-rapier/Components/Controllers/RapierThirdPersonController.re';
-import { randomRange, randomInt } from '../Helpers/util';
+import { randomRange, randomInt, lerpV3 } from '../Helpers/util';
 import Warehouse from './Warehouse.re';
 import { Vector3 } from 'three.quarks';
 
@@ -20,17 +20,13 @@ export type EquipmentOrder = {
   pos: THREE.Vector3
 }
 
-function lerpV3(a: THREE.Vector3, b: THREE.Vector3, t: number, h: number) {
-  a.x = THREE.MathUtils.damp(a.x, b.x, t, h);
-  a.y = THREE.MathUtils.damp(a.y, b.y, t, h);
-  a.z = THREE.MathUtils.damp(a.z, b.z, t, h);
-}
+
 
 
 @RE.registerComponent
 export default class DropshipController extends RE.Component {
 
-  @RE.props.num() speed: number;
+  @RE.props.num(0, 1) speed: number;
   @RE.props.num(1) caution: number;
   @RE.props.num() baseY: number;
   @RE.props.num() requestX: number;

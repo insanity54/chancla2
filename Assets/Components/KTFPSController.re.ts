@@ -102,6 +102,8 @@ export default class KTFPSController extends RE.Component {
   private collider: RAPIER.Collider;
 
   onHit = (intersection: THREE.Intersection) => {
+    // RE.Debug.clear()
+    // RE.Debug.log(`KTFPSController onHit intersection with ${intersection.object.name}`)
     const enemyCharacter = RogueCharacter.get(intersection.object, true);
 
     if (enemyCharacter?.type === "Friendly") return;
@@ -524,7 +526,7 @@ export default class KTFPSController extends RE.Component {
     const rayLength = 500; // Set the desired length of the ray
     const rayDestination = new THREE.Vector3().copy(this.rayOrigin).addScaledVector(this.rayDir, rayLength);
 
-    drawLine(this.rayOrigin, rayDestination, 0x00ff00);
+    // drawLine(this.rayOrigin, rayDestination, 0x00ff00);
     const playerCharacterBody = RE.getComponent(RapierBody, this.object3d) // the body we want to exclude from ray selection
 
 

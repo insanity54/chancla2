@@ -40,7 +40,7 @@ export default class TaskList extends RE.Component {
       // get a task
       this.completeActiveTask()
 
-      let taskSpec: TaskSpec = this.taskSpecParser(this.activeTask)
+      let taskSpec: TaskSpec = TaskList.parseTask(this.activeTask)
 
       this.activeTaskAction = taskSpec.action
       // run the task
@@ -61,26 +61,34 @@ export default class TaskList extends RE.Component {
     this.activeTask = this.taskList.tasks.shift() || ''
   }
 
-
-  taskSpecParser(spec: string): TaskSpec {
-    // Split the spec string into parts
-    const parts = spec.split(',');
-
-    // Extract the action (first part)
-    const action = parts[0].trim();
-
-    // Extract the parameters (remaining parts)
-    const params = parts.slice(1).map(param => {
-      // Try to parse numbers, otherwise keep as strings
-      const parsed = parseFloat(param);
-      return isNaN(parsed) ? param.trim() : parsed;
-    });
-
-    // Return the TaskSpec object
+  static parseTask(activeTask: string): TaskSpec {
+    let s = activeTask.split(',')
     return {
-      action,
-      params,
-    };
+      action: s.shift() || '',
+      params: s
+    }
   }
+
+
+  // taskSpecParser(spec: string): TaskSpec {
+  //   // Split the spec string into parts
+  //   const parts = spec.split(',');
+
+  //   // Extract the action (first part)
+  //   const action = parts[0].trim();
+
+  //   // Extract the parameters (remaining parts)
+  //   const params = parts.slice(1).map(param => {
+  //     // Try to parse numbers, otherwise keep as strings
+  //     const parsed = parseFloat(param);
+  //     return isNaN(parsed) ? param.trim() : parsed;
+  //   });
+
+  //   // Return the TaskSpec object
+  //   return {
+  //     action,
+  //     params,
+  //   };
+  // }
 
 }

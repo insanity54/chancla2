@@ -1,3 +1,23 @@
+# Chancla2
+
+The final push to version 0.0.0
+
+## Checklist
+
+  * [x] Weapons
+  * [x] Spawnpoints
+  * [x] Towers
+  * [x] Dropship
+  * [ ] Mission editor
+    * [ ] walk task
+    * [ ] kill task
+    * [ ] wait task
+    * [ ] emote task
+    * [ ] sfx task
+  * [ ] NPC fires back
+  * [ ] Roller grenades
+  * [ ] VO lines
+  * [ ] Jumpjet
 
 
 ## Dropship voice lines

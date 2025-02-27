@@ -229,13 +229,14 @@ export default class KTFPSWeapon extends RE.Component {
     RE.Runtime.camera.getWorldDirection(this.rayDir);
 
     const rigidbodies = RE.getComponents(RapierBody);
-    const bodies = rigidbodies.filter(body => body.object3d !== this.fpsController.object3d && body.type !== 1)
+    const bodies = rigidbodies.filter(body => body.object3d !== this.fpsController.object3d)
       .map(body => body.object3d);
 
     this.raycaster.set(this.rayOrigin, this.rayDir);
     const intersections = this.raycaster.intersectObjects(bodies, true);
 
     if (intersections.length > 0) {
+      // RE.Debug.log(`KTFPSWeapon had ${intersections.length} (RapierBody) intersections. ${intersections.map((i) => i.object.name).join(', ')}`)
       return onHit(intersections[0]);
     }
 
@@ -253,6 +254,8 @@ export default class KTFPSWeapon extends RE.Component {
       const intersections = this.raycaster.intersectObject(obj, true);
 
       if (intersections.length < 1) return;
+
+      // RE.Debug.log(`KTFPSWeapon had ${intersections.length} (RapierCollider) intersections. ${intersections.map((i) => i.object.name).join(', ')}`)
 
       onHit(intersections[0]);
     }
