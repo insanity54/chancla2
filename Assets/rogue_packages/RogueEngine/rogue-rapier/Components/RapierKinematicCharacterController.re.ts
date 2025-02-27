@@ -107,8 +107,8 @@ export default class RapierKinematicCharacterController extends RapierBody {
     }
 
     this.curJumpHeight = (nextPosition.y - this.jumpYStart) + this.offset * 1.1;
-    const jumpPct = 100 - ((this.curJumpHeight * 100) / this.jumpHeight);
-    const jumpSpeedFactor = Math.max(jumpPct / 100, 0.1);
+    const jumpPct = 100 - ((this.curJumpHeight * 100) /  this.jumpHeight);
+    const jumpSpeedFactor = Math.max(jumpPct/100, 0.1);
     const curJumpSpeed = this.jumpSpeed * jumpSpeedFactor;
 
     // if (this.isJumpingUp && this.curJumpHeight >= this.jumpHeight || this.lastJumpHeight === this.curJumpHeight) {
@@ -131,15 +131,15 @@ export default class RapierKinematicCharacterController extends RapierBody {
       }
     }
 
-    for (let i = 0; i < this.body.numColliders(); i++) {
-      // Ignore sensors
-      if (this.body.collider(i).isSensor()) continue;
-
+    // for (let i = 0; i < this.body.numColliders(); i++) {
       this.characterController.computeColliderMovement(
-        this.body.collider(i),
+        this.body.collider(0),
         this.playerVelocity,
+        RAPIER.QueryFilterFlags.EXCLUDE_SENSORS,
+        undefined,
+        (col) => !col.isSensor()
       );
-    }
+    // }
 
     const characterMovement = this.characterController.computedMovement();
 
