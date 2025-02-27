@@ -2,7 +2,12 @@ import RogueCharacter from '@RE/RogueEngine/rogue-character/RogueCharacter.re';
 import * as RE from 'rogue-engine';
 import RapierKinematicCharacterController from '@RE/RogueEngine/rogue-rapier/Components/RapierKinematicCharacterController.re';
 import * as THREE from 'three'
-import TaskList from './TaskList.re';
+
+
+export type TaskSpec = {
+    action: string,
+    params: string[]
+}
 
 @RE.registerComponent
 export default class NPCController extends RE.Component {
@@ -11,28 +16,57 @@ export default class NPCController extends RE.Component {
     @RE.props.vector3() destination = this.object3d.position.clone()
 
 
+    @RE.props.text() activeTask: string = '';
+    @RE.props.text() activeTaskAction: string = '';
+    @RE.props.list.text() tasks: string[] = [];
+
+
+
+    @RapierKinematicCharacterController.require()
+    characterController: RapierKinematicCharacterController;
+
+
+
     private targetDirection = new THREE.Vector3();
     private dummy = new THREE.Object3D();
 
-    private _taskList: TaskList
 
     private inputVelocity = new THREE.Vector3();
 
-    private _characterController: RapierKinematicCharacterController;
+    // private _characterController: RapierKinematicCharacterController;
 
     private localFWD = new THREE.Vector3();
 
-    get taskList() {
-        return (!this._taskList) ? TaskList.get(this.object3d) : this._taskList
-    }
 
 
-    get characterController() {
-        if (!this._characterController) {
-            return RapierKinematicCharacterController.get(this.object3d);
+
+    static parseTask(activeTask: string): TaskSpec {
+        let s = activeTask.split(',')
+        return {
+            action: s.shift() || '',
+            params: s
         }
-        return this._characterController;
     }
+
+
+
+    static parseWalkTask(task: TaskSpec) {
+        if (task.params.length !== 3) RE.Debug.logError(`TaskSpec params was length ${task.params.length} but it must be exactly 3.`);
+        // RE.Debug.log(`parseWalkTask! task.params=${JSON.stringify(task.params)}`)
+        return {
+            action: task.action,
+            params: task.params.map((n) => parseInt(n))
+        }
+    }
+
+
+
+    // get characterController() {
+    //     if (!this._characterController) {
+    //         return RapierKinematicCharacterController.get(this.object3d);
+    //     }
+    //     return this._characterController;
+    // }
 
     awake() {
         if (!RE.Runtime.isRunning) return;
@@ -40,26 +74,63 @@ export default class NPCController extends RE.Component {
     }
 
     start() {
-        if (!this.characterController) {
-            RE.Debug.logError("NPC is missing a Rapier Kinematic Character Controller!!!!!!!!!!!!!!")
-        }
+        // if (!this.characterController) {
+        //     RE.Debug.logError("NPC is missing a Rapier Kinematic Character Controller!!!!!!!!!!!!!!")
+        // }
     }
 
     update() {
-        this.object3d.getWorldDirection(this.localFWD);
+        // this.object3d.getWorldDirection(this.localFWD);
 
-        this.characterController.movementDirection.x = 0
-        this.characterController.movementDirection.y = 0
-        this.characterController.movementDirection.z = 0
+        // this.characterController.movementDirection.x = 0
+        // this.characterController.movementDirection.y = 0
+        // this.characterController.movementDirection.z = 0
 
+        if (this.activeTaskAction === 'idle') {
+            return;
+        }
 
-        if (this.taskList.activeTask && this.taskList.activeTaskAction === 'walk') {
-            this.setRotation();
+        else if (this.activeTaskAction === 'walk') {
+            // this.setRotation();
             this.translate();
         }
+
+        // let tasks = this.taskList.tasks
+        else if (this.activeTask === '') {
+            // get a task
+            this.getNextTask()
+
+
+            // if (taskSpec.action === 'walk') NPCController.walk(taskSpec.params);
+            // if (taskSpec.action === 'kill') NPCController.kill(taskSpec.params);
+
+        }
+
+        // RE.Debug.log(`tasks=${JSON.stringify(tasks)}`)
+        // * Get the first task in the TaskList
+        // * Parse the task to get the task type, args
+        // * Execute the first task
+
+
     }
 
 
+
+    getNextTask() {
+        this.activeTask = this.tasks.shift() || ''
+
+        const taskSpec: TaskSpec = NPCController.parseTask(this.activeTask)
+
+        this.activeTaskAction = taskSpec.action
+        // run the task
+        if (taskSpec.action === 'walk') {
+            const { action, params } = NPCController.parseWalkTask(taskSpec)
+            const [x, y, z] = params
+            // RE.Debug.log(`params=${JSON.stringify(params)} x=${x}, y=${y}, z=${z}`)
+            this.destination = new THREE.Vector3(x, y, z)
+        }
+
+    }
 
     axesToDestination(): { x: number; y: number } {
         const forward = this.destination.clone().normalize(); // Ensure a unit direction vector
@@ -75,7 +146,7 @@ export default class NPCController extends RE.Component {
 
 
     setRotation() {
-        if (!this.characterController?.body) return;
+        // if (!this.characterController?.body) return;
 
 
         // Calculate the direction to the destination
@@ -97,11 +168,15 @@ export default class NPCController extends RE.Component {
         this.object3d.quaternion.slerp(targetQuaternion, (this.lookSpeed.x / 10) * RE.Runtime.deltaTime);
 
         // Apply the rotation to the character controller
-        this.characterController.body.setRotation(this.object3d.quaternion, true);
+        // this.characterController.body.setRotation(this.object3d.quaternion, true);
     }
 
     translate() {
-        if (!this.characterController) return;
+        if (!this.characterController) {
+            RE.Debug.logError("NPCController is missing characterController")
+            return;
+        }
+        // RE.Debug.log('translating')
 
         // Calculate the direction to the destination
         const direction = new THREE.Vector3();
@@ -112,8 +187,9 @@ export default class NPCController extends RE.Component {
 
         // Stop moving if the object is close enough to the destination
         if (distanceToDestination < 1) {
+            RE.Debug.log(`destination ${JSON.stringify(this.destination)} reached`)
             this.inputVelocity.z = 0; // Stop moving
-            this.taskList.completeActiveTask()
+            this.getNextTask()
             return;
         }
 

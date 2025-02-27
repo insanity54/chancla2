@@ -2,10 +2,6 @@ import * as RE from 'rogue-engine';
 import Task from './Task.re'
 
 
-export type TaskSpec = {
-  action: string,
-  params: (string | number)[]
-}
 
 @RE.registerComponent
 export default class TaskList extends RE.Component {
@@ -35,38 +31,6 @@ export default class TaskList extends RE.Component {
 
   update() {
 
-    // let tasks = this.taskList.tasks
-    if (this.activeTask === '') {
-      // get a task
-      this.completeActiveTask()
-
-      let taskSpec: TaskSpec = TaskList.parseTask(this.activeTask)
-
-      this.activeTaskAction = taskSpec.action
-      // run the task
-      // if (taskSpec.action === 'walk') NPCController.walk(taskSpec.params);
-      // if (taskSpec.action === 'kill') NPCController.kill(taskSpec.params);
-
-    }
-
-    // RE.Debug.log(`tasks=${JSON.stringify(tasks)}`)
-    // * Get the first task in the TaskList
-    // * Parse the task to get the task type, args
-    // * Execute the first task
-
-
-  }
-
-  completeActiveTask() {
-    this.activeTask = this.taskList.tasks.shift() || ''
-  }
-
-  static parseTask(activeTask: string): TaskSpec {
-    let s = activeTask.split(',')
-    return {
-      action: s.shift() || '',
-      params: s
-    }
   }
 
 

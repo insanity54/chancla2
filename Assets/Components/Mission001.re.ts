@@ -1,12 +1,18 @@
 import * as RE from 'rogue-engine';
 import { Audio } from 'three';
-import MissionTrigger from './MissionTrigger.re';
 import * as THREE from 'three';
+import Settings from './Settings.re';
 
 @RE.registerComponent
 export default class Mission001 extends RE.Component {
 
   // @RE.props.list.audio() audio: Audio[];
+
+
+  @Settings.require()
+  settings: Settings;
+
+
 
 
   @RE.props.audio() audioWompratStart: Audio;
@@ -36,6 +42,26 @@ export default class Mission001 extends RE.Component {
   }
 
   start() {
+    // this.audioWompratStart.setVolume(this.settings.voiceoverVolume)
+    // this.audioWompratMid.setVolume(this.settings.voiceoverVolume)
+    // this.audioWompratEnd.setVolume(this.settings.voiceoverVolume)
+    // this.audioInvasionStart.setVolume(this.settings.voiceoverVolume)
+    // this.audioInvasionEnd.setVolume(this.settings.voiceoverVolume)
+    // if (this.audioThanksForPlaying) this.audioThanksForPlaying.setVolume(this.settings.voiceoverVolume);
+
+    const audioClips = [
+      "audioWompratStart",
+      "audioWompratMid",
+      "audioWompratEnd",
+      "audioInvasionStart",
+      "audioInvasionEnd",
+      "audioThanksForPlaying",
+    ];
+
+    audioClips.forEach((clip) => {
+      if (this[clip]) this[clip].setVolume(this.settings.voiceoverVolume);
+    });
+
     this.missionTriggersGroup = RE.Runtime.scene.getObjectByName("MissionTriggers") as THREE.Object3D;
     this.enemiesGroup = RE.Runtime.scene.getObjectByName("Enemies") as THREE.Object3D;
   }
