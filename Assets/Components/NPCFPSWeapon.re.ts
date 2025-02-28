@@ -1,11 +1,11 @@
 import RapierCollider from '@RE/RogueEngine/rogue-rapier/Components/Colliders/RapierCollider';
-import RapierFirstPersonController from '@RE/RogueEngine/rogue-rapier/Components/Controllers/RapierFirstPersonController.re';
 import RogueRapier from '@RE/RogueEngine/rogue-rapier/Lib/RogueRapier';
 import RAPIER from '@dimforge/rapier3d-compat';
 import * as RE from 'rogue-engine';
 import * as THREE from 'three';
 import RapierBody from '@RE/RogueEngine/rogue-rapier/Components/RapierBody.re';
 import * as RFPS from '@RE/RogueEngine/rapier-fps';
+import RapierKinematicCharacterController from '@RE/RogueEngine/rogue-rapier/Components/RapierKinematicCharacterController.re';
 
 const q1 = new THREE.Quaternion();
 const q2 = new THREE.Quaternion();
@@ -33,6 +33,7 @@ export default class NPCFPSWeapon extends RE.Component {
     @RE.props.num() particleSpeed = 15;
 
     @RE.props.audio(true) shotSFX: THREE.PositionalAudio;
+    @RE.props.num(0, 1) shotSFXVolume = 1;
     @RE.props.num(0, 0.5) shotSFXRolloff = 0.07;
     @RE.props.audio(true) reloadSFX: THREE.PositionalAudio;
     @RE.props.object3d() barrel: THREE.Object3D;
@@ -72,10 +73,11 @@ export default class NPCFPSWeapon extends RE.Component {
     @RE.props.num(0) idleBobbing = 1;
     @RE.props.num(0) movementBobbing = 1;
     @RE.props.num(0, 1) aimMovementFactor = 0.3;
+    @RE.props.checkbox() isEquiped = false;
 
     bulletMark = new THREE.Mesh(new THREE.SphereGeometry(0.02));
 
-    isEquiped = false;
+    // isEquiped = false;
     overheated = false;
 
     curAimPos = this.hipPos;
@@ -86,8 +88,14 @@ export default class NPCFPSWeapon extends RE.Component {
     private parent = this.object3d.parent
     private bullets: { [uuid: string]: BulletParticle } = {};
 
-    @RapierFirstPersonController.require(true)
-    fpsController: RapierFirstPersonController;
+    // @RapierFirstPersonController.require(true)
+    // fpsController: RapierFirstPersonController;
+
+    // @NPCFPSController.require(true)
+    // fpsController: NPCFPSController
+
+    @RapierKinematicCharacterController.require(true)
+    rkcc: RapierKinematicCharacterController
 
     get isReloading() {
         return this.reloadCounter !== 0;
@@ -156,7 +164,7 @@ export default class NPCFPSWeapon extends RE.Component {
             }
         }
 
-        RE.Debug.log(`Shooting from object3d=${this.parent?.name}`)
+        // RE.Debug.log(`Shooting from this.parent.name=${this.parent?.name}, this.name=${this.name}, this.parent.type=${this.parent?.type}`)
         if (!this.parent) return;
 
         this.fireRateCounter = this.firingRate;
@@ -214,6 +222,7 @@ export default class NPCFPSWeapon extends RE.Component {
             const detune = RFPS.randomRange(-100, 100);
             this.shotSFX.detune = detune;
             this.shotSFX.setRolloffFactor(this.shotSFXRolloff);
+            this.shotSFX.setVolume(this.shotSFXVolume);
             this.shotSFX.play();
         }
 
@@ -232,17 +241,18 @@ export default class NPCFPSWeapon extends RE.Component {
         this.object3d.getWorldDirection(this.rayDir);
 
         const rigidbodies = RE.getComponents(RapierBody);
-        const bodies = rigidbodies.filter(body => body.object3d !== this.fpsController.object3d && body.type !== 1)
+        const bodies = rigidbodies.filter(body => body.object3d !== this.object3d.parent && body.type !== 1)
             .map(body => body.object3d);
 
         this.raycaster.set(this.rayOrigin, this.rayDir);
         const intersections = this.raycaster.intersectObjects(bodies, true);
 
         if (intersections.length > 0) {
+            // RE.Debug.log(`intersections with ${intersections.length} RapierBodies. ${intersections.map(i => i.object.name).join(', ')}`)
             return onHit(intersections[0]);
         }
 
-        const res = RogueRapier.world.castRay(this.rapierRay, 1000, true, undefined, undefined, undefined, this.fpsController.characterController.body);
+        const res = RogueRapier.world.castRay(this.rapierRay, 1000, true, undefined, undefined, undefined, this.rkcc.characterColliders[0]?.body);
 
         if (res) {
             const components = RE.getComponents(RapierCollider as any) as RapierCollider[];
@@ -256,8 +266,13 @@ export default class NPCFPSWeapon extends RE.Component {
             const intersections = this.raycaster.intersectObject(obj, true);
 
             if (intersections.length < 1) return;
+            // RE.Debug.log(`intersections with ${intersections.length} RapierColliders (${intersections.map((i) => i.object.name).join(', ')})`)
 
             onHit(intersections[0]);
+        }
+
+        else {
+            RE.Debug.log("No intersections!")
         }
     }
 

@@ -33,6 +33,7 @@ export default class FPSWeapon extends RE.Component {
   @RE.props.num() particleSpeed = 15;
 
   @RE.props.audio(true) shotSFX: THREE.PositionalAudio;
+  @RE.props.num(0, 1) shotVolume = 1;
   @RE.props.num(0, 0.5) shotSFXRolloff = 0.07;
   @RE.props.audio(true) reloadSFX: THREE.PositionalAudio;
   @RE.props.object3d() barrel: THREE.Object3D;
@@ -83,7 +84,7 @@ export default class FPSWeapon extends RE.Component {
   swayDir = new THREE.Vector3();
   projectilesContainer: THREE.Object3D;
 
-  private bullets: {[uuid: string]: BulletParticle} = {};
+  private bullets: { [uuid: string]: BulletParticle } = {};
 
   @RapierFirstPersonController.require(true)
   fpsController: RapierFirstPersonController;
@@ -191,7 +192,7 @@ export default class FPSWeapon extends RE.Component {
       targetPos.copy(bullet.position);
       bullet.translateZ(-distance);
 
-      this.bullets[bullet.uuid] = {obj: bullet, targetPos, distance, startPos, t: 0};
+      this.bullets[bullet.uuid] = { obj: bullet, targetPos, distance, startPos, t: 0 };
 
       this.shootRaycast((intersection) => {
         this.bullets[bullet.uuid].targetPos.copy(intersection.point);
@@ -210,13 +211,14 @@ export default class FPSWeapon extends RE.Component {
       const detune = RFPS.randomRange(-100, 100);
       this.shotSFX.detune = detune;
       this.shotSFX.setRolloffFactor(this.shotSFXRolloff);
+      this.shotSFX.setVolume(this.shotVolume);
       this.shotSFX.play();
     }
 
     this.recoil();
   }
 
-  onHit = (intersection: THREE.Intersection) => {}
+  onHit = (intersection: THREE.Intersection) => { }
 
   raycaster = new THREE.Raycaster();
   rayOrigin = new THREE.Vector3();
@@ -229,7 +231,7 @@ export default class FPSWeapon extends RE.Component {
 
     const rigidbodies = RE.getComponents(RapierBody);
     const bodies = rigidbodies.filter(body => body.object3d !== this.fpsController.object3d && body.type !== 1)
-    .map(body => body.object3d);
+      .map(body => body.object3d);
 
     this.raycaster.set(this.rayOrigin, this.rayDir);
     const intersections = this.raycaster.intersectObjects(bodies, true);
@@ -261,7 +263,7 @@ export default class FPSWeapon extends RE.Component {
     const remove: BulletParticle[] = [];
     for (let uuid in this.bullets) {
       const bullet = this.bullets[uuid];
-      RFPS.lerpV3(bullet.obj.position, bullet.targetPos, 0.2, this.particleSpeed * (10/bullet.distance) * RE.Runtime.deltaTime);
+      RFPS.lerpV3(bullet.obj.position, bullet.targetPos, 0.2, this.particleSpeed * (10 / bullet.distance) * RE.Runtime.deltaTime);
 
       const distance = bullet.obj.position.distanceTo(bullet.startPos);
 
@@ -288,7 +290,7 @@ export default class FPSWeapon extends RE.Component {
     if (this.reloadCounter === 0 && this.loadedRounds < this.magSize) {
       if (this.reloadSFX) {
         this.reloadSFX.isPlaying && this.reloadSFX.stop();
-        this.reloadSFX.duration = this.reloadTime/1000;
+        this.reloadSFX.duration = this.reloadTime / 1000;
         this.reloadSFX.play();
       }
 
@@ -302,7 +304,7 @@ export default class FPSWeapon extends RE.Component {
     this.reloadCounter -= RE.Runtime.deltaTime * 1000;
 
     this.curAimPos = this.reloadPos;
-    
+
     if (this.reloadCounter <= 0) {
       this.reloadCounter = 0;
       const curRounds = this.curRounds - (this.magSize - this.loadedRounds);
@@ -312,17 +314,17 @@ export default class FPSWeapon extends RE.Component {
   }
 
   recoil() {
-    const recoil = this.isAiming ? 
-    RFPS.randomRange(this.aimedRecoilMin.x, this.aimedRecoilMax.x, true) : 
-    RFPS.randomRange(this.hipRecoilMin.x, this.hipRecoilMax.x, true);
+    const recoil = this.isAiming ?
+      RFPS.randomRange(this.aimedRecoilMin.x, this.aimedRecoilMax.x, true) :
+      RFPS.randomRange(this.hipRecoilMin.x, this.hipRecoilMax.x, true);
 
-    const recoilY = this.isAiming ? 
-    RFPS.randomRange(this.aimedRecoilMin.y, this.aimedRecoilMax.y, true) : 
-    RFPS.randomRange(this.hipRecoilMin.y, this.hipRecoilMax.y, true);
+    const recoilY = this.isAiming ?
+      RFPS.randomRange(this.aimedRecoilMin.y, this.aimedRecoilMax.y, true) :
+      RFPS.randomRange(this.hipRecoilMin.y, this.hipRecoilMax.y, true);
 
-    this.object3d.position.z += (this.isAiming ? 
-    RFPS.randomRange(this.aimedRecoilMin.z, this.aimedRecoilMax.z) : 
-    RFPS.randomRange(this.hipRecoilMin.z, this.hipRecoilMax.z)
+    this.object3d.position.z += (this.isAiming ?
+      RFPS.randomRange(this.aimedRecoilMin.z, this.aimedRecoilMax.z) :
+      RFPS.randomRange(this.hipRecoilMin.z, this.hipRecoilMax.z)
     ) * 0.001;
 
     const deltaRotY = Math.random() < 0.5 ? recoil : -recoil;
@@ -353,4 +355,3 @@ export default class FPSWeapon extends RE.Component {
     }
   }
 }
-        

@@ -17,6 +17,7 @@ export default class NPCFPSController extends RE.Component {
   @RE.props.num(0) camShakeFactor = 0.3;
   @RE.props.num(0) headBobbingAmt = 0.2;
   @RE.props.num(0) sprintStaminaSpend = 20;
+  @RE.props.checkbox() equipping = false;
 
   kyberpodDir = new THREE.Vector3();
   shootDir = new THREE.Vector3();
@@ -25,7 +26,7 @@ export default class NPCFPSController extends RE.Component {
   npcfpsWeapon: NPCFPSWeapon;
   selectedWeapon = 0;
 
-  private equipping = false;
+  // private equipping = false;
 
   awake() {
 
@@ -71,14 +72,39 @@ export default class NPCFPSController extends RE.Component {
 
     this.npcfpsWeapon.onHit = this.onHit;
 
+
+    // const bullet = this.projectileParticle.instantiate(this.projectilesContainer);
+    // this.barrel.getWorldPosition(bullet.position);
+    // this.object3d.getWorldQuaternion(bullet.quaternion);
+
+    // this.object3d.add(this.npcfpsWeapon.object3d)
     this.object3d.attach(this.npcfpsWeapon.object3d);
+
+    // this.object3d.getWorldPosition(this.npcfpsWeapon.object3d.position);
+    // this.object3d.getWorldQuaternion(this.npcfpsWeapon.object3d.quaternion);
+
+
+    // Now set the position and quaternion
+    // this.npcfpsWeapon.object3d.position.copy(this.object3d.getWorldPosition(new THREE.Vector3()));
+    // this.npcfpsWeapon.object3d.quaternion.copy(this.object3d.getWorldQuaternion(new THREE.Quaternion()));
+
+    this.npcfpsWeapon.object3d.position.set(0, 0.7, 0)
+    // this.npcfpsWeapon.object3d.position.set(0, 0, 0);
+    // this.npcfpsWeapon.object3d.setRotationFromQuaternion(new THREE.Quaternion(0, 0, 0))
+    // this.npcfpsWeapon.object3d.rotation.set(1, 1, 1);
+
+
     // this.camera.attach(this.npcfpsWeapon.object3d);
     // this.camera.getWorldDirection(this.camDir);
     // this.camera.getWorldPosition(this.shootDir);
-    this.object3d.getWorldDirection(this.kyberpodDir)
-    this.shootDir.add(this.kyberpodDir.multiplyScalar(20));
 
-    this.npcfpsWeapon.object3d.lookAt(this.shootDir);
+
+
+    // here
+    // this.object3d.getWorldDirection(this.kyberpodDir)
+    // this.shootDir.add(this.kyberpodDir.multiplyScalar(20));
+
+    // this.npcfpsWeapon.object3d.lookAt(this.shootDir);
     this.npcfpsWeapon.isEquiped = true;
     this.selectedWeapon = i;
     this.npcfpsWeapon.object3d.visible = true;

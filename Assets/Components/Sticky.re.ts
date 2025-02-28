@@ -31,6 +31,8 @@ export default class Sticky extends RE.Component {
         const otherObject = info.otherBody.object3d
         const otherCharacter = RE.getComponent(RogueCharacter, otherObject, false)
         if (this.crushing && otherCharacter) {
+          // RE.Debug.log(`${info.otherBody} is getting crushed`)
+          // RE.Debug.log(JSON.stringify(info.otherBody))
           otherCharacter.curHP = 0
         }
 

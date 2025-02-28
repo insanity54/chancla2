@@ -2,11 +2,19 @@ import * as RE from 'rogue-engine';
 import RapierKinematicCharacterController from '@RE/RogueEngine/rogue-rapier/Components/RapierKinematicCharacterController.re';
 import * as THREE from 'three'
 import RogueAnimator from '@RE/RogueEngine/rogue-animator/RogueAnimator.re';
+import * as RAPIER from '@dimforge/rapier3d-compat';
+import RapierBody, { RapierCollisionInfo } from '@RE/RogueEngine/rogue-rapier/Components/RapierBody.re';
+import TowerController from './TowerController.re';
+import FPSWeapon from '@RE/RogueEngine/rapier-fps/Components/FPSWeapon.re';
+import { randomInt } from 'Assets/Helpers/util';
 
 export type TaskSpec = {
     action: string,
     params: string[]
 }
+
+type OnCollisionCallback = (info: RapierCollisionInfo) => void;
+
 
 @RE.registerComponent
 export default class NPCController extends RE.Component {
@@ -21,7 +29,8 @@ export default class NPCController extends RE.Component {
     @RE.props.checkbox() repeat: boolean = true;
     @RE.props.num() taskCursor: number = 0;
     @RE.props.num() taskTimer: number = 0;
-
+    @RE.props.num(0, 1) slerpFactor: number = 0.3; // lower is smoother, higher is faster
+    @RE.props.num() sensorRange: number = 50;
 
     @RapierKinematicCharacterController.require()
     characterController: RapierKinematicCharacterController;
@@ -29,9 +38,23 @@ export default class NPCController extends RE.Component {
     @RogueAnimator.require()
     animator: RogueAnimator;
 
+    @FPSWeapon.require()
+    weapon: FPSWeapon;
+
+    @RapierBody.require()
+    body: RapierBody
+
+    private rapierWorld: RAPIER.World;
     private taskSpec: TaskSpec;
     private targetDirection = new THREE.Vector3();
+    private targetPosition = new THREE.Vector3();
+    // private npcPos
     private dummy = new THREE.Object3D();
+    private target: THREE.Object3D | undefined;
+    private direction: THREE.Vector3;
+    private targetQuaternion: THREE.Quaternion;
+    private currentRotation: THREE.Quaternion;
+    private sensorCollider?: RAPIER.Collider; // Sensor collider for target detection
 
 
     private inputVelocity = new THREE.Vector3();
@@ -109,6 +132,32 @@ export default class NPCController extends RE.Component {
     }
 
 
+
+    acquireTarget(targetName: string, range: number): void {
+
+        // const targets = RE.Runtime.scene.getObjectsByProperty('radarTarget', true)
+        // if (targets.length > 0) {
+        //     RE.Debug.log(`radarTargets=${JSON.stringify(targets)}`)
+        // }
+        let targets: THREE.Object3D[] = []
+        RE.traverseComponents((component) => {
+            if (component.object3d.name !== targetName) return;
+            targets.push(component.object3d)
+            // component.collider.setTranslationWrtParent(component.object3d.position);
+        });
+
+        // RE.Debug.log(`targets=${targets.map((t) => t.name).join(', ')}`)
+        // return targets
+        // get the closest target
+        // targets.sort((a, b) => {
+        //     return a.position.distanceTo(this.object3d.position) - b.position.distanceTo(this.object3d.position)
+        // })
+        this.target = targets[randomInt(0, targets.length)]
+
+
+    }
+
+
     /** 
      * handleKillTask
      * find a target with that name within (500 distance(?))
@@ -125,8 +174,45 @@ export default class NPCController extends RE.Component {
         this.characterController.movementDirection.z = 0
         // RE.Debug.clear()
         // RE.Debug.log(`killing ${target} for ${this.taskTimer}/${duration}`);
+
+        // @todo make him shoot the target
+        // @todo   * [x] acquire target
+
+        if (!this.target) this.acquireTarget(target, this.sensorRange);
+        if (this.target) {
+
+
+            // @todo   * [x] look at target
+            this.targetPosition = this.target.position.clone();
+
+            this.direction = this.targetPosition.sub(this.object3d.position).normalize();
+            const angle = Math.atan2(this.direction.x, this.direction.z); // Yaw rotation (Y-axis)
+
+            // Convert angle to a quaternion
+            this.targetQuaternion = new THREE.Quaternion();
+            this.targetQuaternion.setFromAxisAngle(new THREE.Vector3(0, 1, 0), angle);
+
+            // Get current rotation
+            this.currentRotation = this.object3d.quaternion.clone();
+
+            // Interpolate smoothly (adjust factor for speed)
+            const interpolated = this.currentRotation.slerp(this.targetQuaternion, this.slerpFactor); // 0.2 = smoother, 0.5 = faster
+
+            // Apply rotation to the RigidBody
+            // this.object3d.quaternion.slerp(rotationQuaternion, 1);
+            this.characterController.body.setRotation(interpolated, true)
+
+        }
+
+        // @todo   * [ ] shoottarget
+        // this.fpsWeapon
+        // this.weapon.shoot()
+
+
+
         if (this.taskTimer > duration) {
             RE.Debug.log("Killing done.");
+            this.target = undefined
             this.loadNextTask();
         }
     }

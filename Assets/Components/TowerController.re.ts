@@ -17,13 +17,15 @@ export default class TowerController extends RE.Component {
   @RE.props.checkbox() warming: boolean = false;
   @RE.props.num() runtime: number = 0;
   @RE.props.audio(true) warmupSFX: THREE.PositionalAudio;
-  // @RE.props.audio(true) ambientSFX: THREE.PositionalAudio;
+  @RE.props.audio(true) ambientSFX: THREE.PositionalAudio;
 
   @RE.props.num() targetY: number = 0; // default to 0.
 
 
   start() {
     // this.getTerrainHeight(this.object3d.position)
+    this.object3d.userData.radarTarget = true
+    // RE.Debug.log(`tower start with userData=${JSON.stringify(this.object3d.userData)}`)
   }
 
   update() {
@@ -50,11 +52,12 @@ export default class TowerController extends RE.Component {
       }
 
       if (this.running) {
-        // // loop the ambient
-        // this causing audio popping and sometimes this.ambientSFX shows as undefined so I'm deleting this feature for now
-        // if (this.warming && !this.ambientSFX.isPlaying) {
-        //   this.ambientSFX.play()
-        // }
+        // loop the ambient
+        // this is causing audio popping
+        // @see https://discord.com/channels/669681919692242954/746385404730671165/1343807527942619197
+        if (this.warming && this.ambientSFX && !this.ambientSFX.isPlaying) {
+          this.ambientSFX.play()
+        }
         this.animator.mix('rotate')
       } else {
         this.animator.mix('idle')
