@@ -21,8 +21,8 @@ type BulletParticle = {
 
 @RE.registerComponent
 export default class NPCFPSWeapon extends RE.Component {
-    // @RE.props.select() firingStyle = 0;
-    // firingStyleOptions = ["Raycast", "Projectile"];
+    @RE.props.select() firingStyle = 0;
+    firingStyleOptions = ["Raycast", "Projectile"];
 
     @RE.props.num(0) damage = 35;
 
@@ -271,9 +271,6 @@ export default class NPCFPSWeapon extends RE.Component {
             onHit(intersections[0]);
         }
 
-        else {
-            RE.Debug.log("No intersections!")
-        }
     }
 
     updateParticles() {

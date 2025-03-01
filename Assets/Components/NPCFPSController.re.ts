@@ -3,6 +3,7 @@ import NPCFPSWeapon from './NPCFPSWeapon.re';
 import * as THREE from 'three';
 import RogueCharacter from '@RE/RogueEngine/rogue-character/RogueCharacter.re';
 import DamagePoint from '@RE/RogueEngine/rogue-character/DamagePoint.re';
+import NPCController from './NPCController.re';
 
 
 @RE.registerComponent
@@ -25,6 +26,10 @@ export default class NPCFPSController extends RE.Component {
 
   npcfpsWeapon: NPCFPSWeapon;
   selectedWeapon = 0;
+
+
+  @NPCController.require(true)
+  npcController: NPCController
 
   // private equipping = false;
 
@@ -54,8 +59,11 @@ export default class NPCFPSController extends RE.Component {
 
   getShootInput() {
     if (!this.npcfpsWeapon) return false;
-    const parentName = this.npcfpsWeapon.object3d.parent?.name
-    return (parentName === 'Enemy Kyberpod')
+    const parent = this.npcfpsWeapon.object3d.parent
+    const parentName = parent?.name
+    if (parentName !== 'Enemy Kyberpod') return false;
+    // return true if it's task is kill
+    return (this.npcController.activeTaskAction === 'kill')
   }
 
   selectWeapon(i: number) {
@@ -136,7 +144,6 @@ export default class NPCFPSController extends RE.Component {
       this.npcfpsWeapon.shoot();
       this.isShooting = true;
     } else {
-
       this.isShooting = false;
     }
   }

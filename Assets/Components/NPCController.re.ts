@@ -5,7 +5,7 @@ import RogueAnimator from '@RE/RogueEngine/rogue-animator/RogueAnimator.re';
 import * as RAPIER from '@dimforge/rapier3d-compat';
 import RapierBody, { RapierCollisionInfo } from '@RE/RogueEngine/rogue-rapier/Components/RapierBody.re';
 import TowerController from './TowerController.re';
-import FPSWeapon from '@RE/RogueEngine/rapier-fps/Components/FPSWeapon.re';
+import NPCFPSWeapon from './NPCFPSWeapon.re';
 import { randomInt } from 'Assets/Helpers/util';
 
 export type TaskSpec = {
@@ -38,8 +38,8 @@ export default class NPCController extends RE.Component {
     @RogueAnimator.require()
     animator: RogueAnimator;
 
-    @FPSWeapon.require()
-    weapon: FPSWeapon;
+    @NPCFPSWeapon.require()
+    weapon: NPCFPSWeapon;
 
     @RapierBody.require()
     body: RapierBody
@@ -206,7 +206,9 @@ export default class NPCController extends RE.Component {
 
         // @todo   * [ ] shoottarget
         // this.fpsWeapon
-        // this.weapon.shoot()
+        // this.weapon.
+        //     this.weapon.shoot()
+
 
 
 

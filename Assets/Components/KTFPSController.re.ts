@@ -32,6 +32,7 @@ const q3 = new THREE.Quaternion();
 
 const packageWeaponMap = {
   "ammocan": "Chaingun",
+  "RollersPackage": "Rollers",
   "IDK": "AK47"
 }
 
