@@ -220,7 +220,7 @@ export default class KTFPSController extends RE.Component {
         // find the KTFPSWeapon that maps to that package
         const weaponName = packageWeaponMap[intersectingObject.name]
         if (!weaponName) {
-          RE.Debug.logWarning("intersecting Object did not have a name")
+          RE.Debug.logWarning(`intersecting Object ${intersectingObject.name} did not have a match in the packageWeaponMap`)
           return;
         }
 

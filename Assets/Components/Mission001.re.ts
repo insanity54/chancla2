@@ -2,6 +2,12 @@ import * as RE from 'rogue-engine';
 import { Audio } from 'three';
 import * as THREE from 'three';
 import Settings from './Settings.re';
+import Warehouse from './Warehouse.re';
+import DropshipController, { EquipmentOrder } from './DropshipController.re';
+import RogueCharacter from '@RE/RogueEngine/rogue-character/RogueCharacter.re';
+import NPCController from './NPCController.re';
+import { randomRange } from 'Assets/Helpers/util';
+import { shuffle } from 'Assets/Helpers/util';
 
 @RE.registerComponent
 export default class Mission001 extends RE.Component {
@@ -14,12 +20,13 @@ export default class Mission001 extends RE.Component {
 
 
 
-
   @RE.props.audio() audioWompratStart: Audio;
   @RE.props.audio() audioWompratMid: Audio;
   @RE.props.audio() audioWompratEnd: Audio;
-  @RE.props.audio() audioInvasionStart: Audio;
+  @RE.props.audio() audioInvasionStartVoice: Audio;
+  @RE.props.audio() audioInvasionStartMusic: Audio;
   @RE.props.audio() audioInvasionEnd: Audio;
+  @RE.props.audio() audioHomeStrike: Audio;
   @RE.props.audio() audioThanksForPlaying: Audio;
 
   @RE.props.select() phase = 0;
@@ -30,50 +37,103 @@ export default class Mission001 extends RE.Component {
     "WompratEnd",
     "InvasionStart",
     "InvasionEnd",
-    "Swarm",
+    "HomeStrike",
     "Thanks"
   ]
 
+  private dropshipsContainer: THREE.Object3D;
   private missionTriggersGroup: THREE.Object3D;
   private enemiesGroup: THREE.Object3D;
+  private bisDropship: THREE.Object3D;
+  private bisDropshipHome: THREE.Vector3 = new THREE.Vector3(-175, 30, -55);
+  private bisWarehouse: Warehouse;
+  private sfWarehouse: Warehouse;
+  private troySpawn: THREE.Vector3;
+  private playersContainer: THREE.Object3D;
+  private defaultSpawn = new THREE.Vector3(0, 0, 0)
 
   awake() {
 
   }
 
-  start() {
-    // this.audioWompratStart.setVolume(this.settings.voiceoverVolume)
-    // this.audioWompratMid.setVolume(this.settings.voiceoverVolume)
-    // this.audioWompratEnd.setVolume(this.settings.voiceoverVolume)
-    // this.audioInvasionStart.setVolume(this.settings.voiceoverVolume)
-    // this.audioInvasionEnd.setVolume(this.settings.voiceoverVolume)
-    // if (this.audioThanksForPlaying) this.audioThanksForPlaying.setVolume(this.settings.voiceoverVolume);
+  initializeDropshipsContainer() {
+    let existingContainer = RE.Runtime.scene.getObjectByName("Dropships")
+    if (!existingContainer) {
+      this.dropshipsContainer = new THREE.Object3D()
+      this.dropshipsContainer.name = "Dropships";
+      RE.Runtime.scene.add(this.dropshipsContainer);
+    } else {
+      this.dropshipsContainer = existingContainer
+    }
+  }
 
-    const audioClips = [
+  initializeWarehouses() {
+    const bisWarehouseName = "BISWarehouse"
+    const bisWarehouseObject = RE.Runtime.scene.getObjectByName(bisWarehouseName)
+    const sfWarehouseName = "SFWarehouse"
+    const sfWarehouseObject = RE.Runtime.scene.getObjectByName(sfWarehouseName)
+    this.bisWarehouse = RE.getComponent(Warehouse, bisWarehouseObject)
+    this.sfWarehouse = RE.getComponent(Warehouse, sfWarehouseObject)
+  }
+
+  initializeSpawnPoints() {
+    this.troySpawn = RE.Runtime.scene.getObjectByName('TroySpawn')?.position || this.defaultSpawn
+  }
+
+  initializePlayersContainer() {
+    this.playersContainer = RE.Runtime.scene.getObjectByName('Players') || (() => {
+      let container = new THREE.Object3D()
+      container.name = 'Players'
+      RE.Runtime.scene.add(container)
+      return container
+    })()
+  }
+
+  setAudioVolume(clips: string[], volumeSetting: number) {
+    clips.forEach((clip) => {
+      if (this[clip]) this[clip].setVolume(volumeSetting);
+    });
+  }
+
+  start() {
+
+    this.initializeWarehouses()
+    this.initializeDropshipsContainer()
+    this.initializeSpawnPoints()
+    this.initializePlayersContainer()
+
+    const voiceClips = [
       "audioWompratStart",
       "audioWompratMid",
       "audioWompratEnd",
-      "audioInvasionStart",
+      "audioInvasionStartVoice",
       "audioInvasionEnd",
       "audioThanksForPlaying",
     ];
 
-    audioClips.forEach((clip) => {
-      if (this[clip]) this[clip].setVolume(this.settings.voiceoverVolume);
-    });
+    const musicClips = [
+      "audioInvasionStartMusic"
+    ]
+
+    this.setAudioVolume(voiceClips, this.settings.voiceoverVolume)
+    this.setAudioVolume(musicClips, this.settings.musicVolume)
+
 
     this.missionTriggersGroup = RE.Runtime.scene.getObjectByName("MissionTriggers") as THREE.Object3D;
     this.enemiesGroup = RE.Runtime.scene.getObjectByName("Enemies") as THREE.Object3D;
   }
 
   update() {
-    if (this.phase === 0) this.waitForIntroStart();
+    if (this.phase === 0) this.waitForWompratStart();
     else if (this.phase === 1) this.waitForWompratKilled();
     else if (this.phase === 2) this.waitForWompratsKilled();
-    else if (this.phase === 3) this.doPhaseWompratEnd();
-    else if (this.phase === 4) this.doPhaseInvasion();
-    else if (this.phase === 5) this.doPhaseSwarm();
-    else if (this.phase === 6) this.doPhaseThanks();
+    else if (this.phase === 3) this.waitForInvasionStart();
+    else if (this.phase === 4) this.waitForThreeEnemyKyberpods();
+    else if (this.phase === 5) this.waitForTwoEnemyKyberpodsKilled();
+    else if (this.phase === 6) this.waitForEnemyKyberpodGTFO();
+    else if (this.phase === 7) this.waitForEnemyKyberpodsKilled(0);
+    else if (this.phase === 8) this.waitForReturnToBase();
+    else if (this.phase === 9) this.waitForEnemyKyberpodsKilled(1);
   }
 
   // trigger objects exist in the scene until they are tripped
@@ -81,15 +141,158 @@ export default class Mission001 extends RE.Component {
     return this.missionTriggersGroup.children.find((tObj) => tObj.name === name)
   }
 
-  enemyExists(name: string) {
-    return this.enemiesGroup.children.find((eObj) => eObj.name === name)
+  enemyExists(name: string, count: number = 1) {
+    let matches = 0
+    for (let i = 0; i < this.enemiesGroup.children.length; i++) {
+      if (this.enemiesGroup.children[i].name === name) matches++;
+    }
+    if (matches === count) return true;
+    else return false;
   }
 
-  waitForIntroStart() {
+  // enemyExists(name: string, count: number = 1): boolean {
+  //   let matchCount = 0;
+
+  //   for (const enemy of this.enemiesGroup.children) {
+  //     if (enemy.name === name) {
+  //       matchCount++;
+  //     }
+  //   }
+  //   if (matchCount === count) return true;
+
+  //   return false;
+  // }
+
+  waitForWompratStart() {
     // player can explore the base without starting the mission
     // as soon as player leaves the base, we enter next phase
-    if (this.triggerExists('IntroStart')) return;
+    if (this.triggerExists('WompratStart')) return;
     this.audioWompratStart.play() // Player is prompted to visit farm 6.
+    this.phase++
+  }
+
+
+  /**
+   * When the player reaches the InvasionStart trigger,
+   *   * [x] BIS dropship swoops in
+   *   * [x] BIS dropship drops a light energy tower and 3 kyberpods
+   *   * [x] BIS kyberpods attack player
+   */
+  waitForInvasionStart(): void {
+    if (this.triggerExists('InvasionStart')) return;
+    // spawn dropship
+
+    const dropshipName = 'BISDropship'
+    const dropshipPrefab = this.bisWarehouse.findItemPrefab(dropshipName)
+
+    if (!dropshipPrefab) {
+      RE.Debug.logError(`${dropshipName} not found in ${this.bisWarehouse.name}`);
+      return
+    }
+
+    let orders: EquipmentOrder[] = [
+      {
+        items: [
+          "LightEnergyTower"
+        ],
+        pos: new THREE.Vector3(110, 1, -9)
+      },
+      {
+        items: [
+          "EnemyKyberpod",
+          "EnemyKyberpod",
+          "EnemyKyberpod"
+        ],
+        pos: new THREE.Vector3(121, 1, 3)
+      },
+      {
+        items: [],
+        pos: this.bisDropshipHome
+      }
+    ]
+
+    this.bisDropship = dropshipPrefab.instantiate(this.dropshipsContainer)
+    this.bisDropship.position.copy(this.bisDropshipHome)
+
+    let bisDropshipComponent = RE.getComponent(DropshipController, this.bisDropship)
+    orders.forEach((order) => { bisDropshipComponent.queueRequest(order) })
+
+    this.audioInvasionStartMusic.play()
+    this.phase++
+  }
+
+  waitForThreeEnemyKyberpods() {
+    if (!this.enemyExists('EnemyKyberpod', 3)) return;
+
+    RE.Debug.log("THREE E KYBERPODSS!!!!! 33333333");
+
+    // program the kyberpod task lists
+    let kyberpods = this.enemiesGroup.children.filter((enemy) => enemy.name === "EnemyKyberpod")
+    kyberpods.forEach((kyberpod) => {
+      let npcControllerComponent = RE.getComponent(NPCController, kyberpod)
+      npcControllerComponent.resetTasks()
+      let tasks = [
+        "idle,1",
+        `walk,${randomRange(110, 140, true)},0,${randomRange(-7, -49, true)}`,
+        `kill,FirstPersonCharacter,${randomRange(3, 9, true)}`,
+        `walk,${randomRange(110, 140, true)},0,${randomRange(-7, -49, true)}`
+      ]
+      shuffle(tasks)
+      npcControllerComponent.tasks = tasks
+    })
+
+    this.audioInvasionStartVoice.play() // "CODE RED!"
+    this.phase++
+
+  }
+
+  waitForTwoEnemyKyberpodsKilled() {
+    if (!this.enemyExists('EnemyKyberpod', 1)) return;
+    RE.Debug.log('TWO E KYBERPODS!!! ~~~~ <3')
+    // make the remaining enemy kyberpod invulnerable and make him GTFO
+    let remainingEnemyKyberpod = this.enemiesGroup.children.find((e) => e.name === "EnemyKyberpod")
+    let character = RE.getComponent(RogueCharacter, remainingEnemyKyberpod)
+    character.armor = 1000
+
+    // @todo jumpjet
+    let npcController = RE.getComponent(NPCController, remainingEnemyKyberpod)
+    npcController.resetTasks()
+    npcController.tasks = [
+      "jumpjet,1,1,1,2" // @todo jj params aren't meaningful. and jj doesn't look right (not an parabolic flight path)
+    ]
+    npcController.repeat = false
+
+    this.phase++
+  }
+
+  waitForEnemyKyberpodGTFO() {
+    if (!this.enemyExists('EnemyKyberpod', 0)) return;
+    this.audioInvasionEnd.play() // "the third one jumped. he's gone."
+
+    this.phase++
+  }
+
+  waitForEnemyKyberpodsKilled(iteration: number) {
+    if (this.enemyExists('EnemyKyberpod')) return;
+
+    // Iteration 0 happens when the invasion is thwarted
+    if (iteration === 0) {
+
+      let troyKyberpodName = 'TroyKyberpod'
+      let troyPrefab = this.sfWarehouse.findItemPrefab(troyKyberpodName)
+      if (!troyPrefab) {
+        RE.Debug.logError(`${troyKyberpodName} not found`)
+      } else {
+        let troyObject = troyPrefab.instantiate(this.playersContainer)
+        troyObject.position.copy(this.troySpawn)
+      }
+      this.audioInvasionEnd.play() // "Look at all the karnage"
+
+      // Iteration 1 happens when BIS raids SolFront base
+    } else {
+      this.audioThanksForPlaying.play()
+      // @todo show credits
+    }
     this.phase++
   }
 
@@ -111,29 +314,10 @@ export default class Mission001 extends RE.Component {
     // @todo implement a trigger which fires when enemy dies
   }
 
-  doPhaseWompratMid() {
-    // as soon as the last womprat is killed, we enter next phase
-
-    // @todo implement a trigger which fires when womprats are dead.
-    // @todo implement a trigger which fires when womprats are dead.
-    // @todo implement a trigger which fires when womprats are dead.
-  }
-
-  doPhaseWompratEnd() {
-    // Player encounters BIS invaders.
-    // as soon as 
-  }
-
-  doPhaseInvasion() {
-
-  }
-
-  doPhaseSwarm() {
-
-  }
-
-  doPhaseThanks() {
-
+  waitForReturnToBase() {
+    if (this.triggerExists('ReturnToBase')) return;
+    this.audioHomeStrike.play()
+    this.phase++
   }
 
 }

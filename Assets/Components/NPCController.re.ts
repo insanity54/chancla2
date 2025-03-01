@@ -31,6 +31,7 @@ export default class NPCController extends RE.Component {
     @RE.props.num() taskTimer: number = 0;
     @RE.props.num(0, 1) slerpFactor: number = 0.3; // lower is smoother, higher is faster
     @RE.props.num() sensorRange: number = 50;
+    @RE.props.audio() audioJumpjet: THREE.PositionalAudio;
 
     @RapierKinematicCharacterController.require()
     characterController: RapierKinematicCharacterController;
@@ -91,7 +92,11 @@ export default class NPCController extends RE.Component {
         return { target, duration: parseInt(duration) }
     }
 
-
+    static parseJumpjetTask(task: TaskSpec) {
+        if (task.params.length !== 4) RE.Debug.logError(`parseJumpjetTask expects 4 params, got ${task.params.length}`);
+        let [x, y, z, duration] = task.params.map((n) => parseInt(n))
+        return { x, y, z, duration }
+    }
 
     static parseIdleTask(task: TaskSpec) {
         if (task.params.length !== 1) RE.Debug.logError(`parseIdleTask expects 1 params. Got ${task.params.length}.`);
@@ -126,8 +131,21 @@ export default class NPCController extends RE.Component {
         this.characterController.movementDirection.z = 0
         const { duration } = NPCController.parseIdleTask(this.taskSpec)
         if (this.taskTimer > duration) {
-            RE.Debug.log("Idling complete.");
+            // RE.Debug.log("Idling complete.");
             this.loadNextTask()
+        }
+    }
+
+    handleJumpjetTask() {
+        if (this.audioJumpjet && !this.audioJumpjet.isPlaying) this.audioJumpjet.play();
+        this.animator.mix("jump")
+        const { x, y, z, duration } = NPCController.parseJumpjetTask(this.taskSpec)
+        this.characterController.movementDirection.y = y
+        this.characterController.movementDirection.x = x
+        this.characterController.movementDirection.z = z
+        if (this.taskTimer > duration) {
+            // delete us to simulate the guy leaving the scene
+            this.object3d.parent?.remove(this.object3d)
         }
     }
 
@@ -167,7 +185,7 @@ export default class NPCController extends RE.Component {
      * repeat
      */
     handleKillTask() {
-        this.animator.mix("dance")
+        this.animator.mix("idle")
         const { target, duration } = NPCController.parseKillTask(this.taskSpec);
         this.characterController.movementDirection.x = 0
         this.characterController.movementDirection.y = 0
@@ -213,7 +231,7 @@ export default class NPCController extends RE.Component {
 
 
         if (this.taskTimer > duration) {
-            RE.Debug.log("Killing done.");
+            // RE.Debug.log("Killing done.");
             this.target = undefined
             this.loadNextTask();
         }
@@ -224,7 +242,17 @@ export default class NPCController extends RE.Component {
         const { params } = NPCController.parseWalkTask(this.taskSpec);
         const [x, y, z] = params;
         this.destination = new THREE.Vector3(x, y, z);
+
+
+        // @todo look in the direction of travel
+
         this.translate()
+    }
+
+    resetTasks(): void {
+        this.tasks = ["idle,1"];
+        this.taskCursor = 0;
+        this.loadNextTask()
     }
 
     // Get the next task and update the cursor
@@ -248,6 +276,7 @@ export default class NPCController extends RE.Component {
         this.activeTaskAction = this.taskSpec.action;
 
         switch (this.activeTaskAction) {
+            case 'jumpjet': this.handleJumpjetTask(); break;
             case 'idle': this.handleIdleTask(); break;
             case 'walk': this.handleWalkTask(); break;
             case 'kill': this.handleKillTask(); break

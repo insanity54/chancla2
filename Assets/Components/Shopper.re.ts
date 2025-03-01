@@ -2,7 +2,7 @@ import * as RE from 'rogue-engine';
 import * as THREE from 'three';
 import DropshipController from './DropshipController.re';
 
-RE.Input.bindButton("Order Tower", { Keyboard: "KeyT" });
+// RE.Input.bindButton("Order Tower", { Keyboard: "KeyT" });
 
 @RE.registerComponent
 export default class Shopper extends RE.Component {
@@ -30,11 +30,11 @@ export default class Shopper extends RE.Component {
 
 
   update() {
-    if (RE.Input.getDown("Order Tower")) {
-      this.affirmativeSFX.isPlaying && this.affirmativeSFX.stop();
-      this.affirmativeSFX.setVolume(0.5)
-      this.affirmativeSFX.play()
-      this.order()
-    }
+    // if (RE.Input.getDown("Order Tower")) {
+    //   this.affirmativeSFX.isPlaying && this.affirmativeSFX.stop();
+    //   this.affirmativeSFX.setVolume(0.5)
+    //   this.affirmativeSFX.play()
+    //   this.order()
+    // }
   }
 }

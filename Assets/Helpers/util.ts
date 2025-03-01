@@ -38,6 +38,22 @@ export function getObjectComponents<T extends RE.Component>(
   return components;
 }
 
+export function shuffle(array: string[]): void {
+  let currentIndex = array.length;
+
+  // While there remain elements to shuffle...
+  while (currentIndex != 0) {
+
+    // Pick a remaining element...
+    let randomIndex = Math.floor(Math.random() * currentIndex);
+    currentIndex--;
+
+    // And swap it with the current element.
+    [array[currentIndex], array[randomIndex]] = [
+      array[randomIndex], array[currentIndex]];
+  }
+}
+
 
 export function getObjectComponent<T extends RE.Component>(componentType: new (...args: any[]) => T, object: THREE.Object3D): T | false {
   const component = RE.getComponent(componentType, object);

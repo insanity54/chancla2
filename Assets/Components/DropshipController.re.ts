@@ -47,6 +47,7 @@ export default class DropshipController extends RE.Component {
 
   stateOptions = ["hovering", "turning", "flying", "dropping"];
   itemsContainer: THREE.Object3D;
+  enemiesContainer: THREE.Object3D;
   qToRequestVector: THREE.Quaternion;
   warehouse: Warehouse;
 
@@ -124,6 +125,7 @@ export default class DropshipController extends RE.Component {
 
     this.dropshipsContainer = RE.Runtime.scene.getObjectByName("Dropships") as THREE.Object3D;
     this.itemsContainer = RE.Runtime.scene.getObjectByName("Items") as THREE.Object3D;
+    this.enemiesContainer = RE.Runtime.scene.getObjectByName("Enemies") as THREE.Object3D;
     this.warehouse = RE.getComponent(Warehouse, this.warehouseObject)
 
     if (!this.dropshipsContainer) {
@@ -137,6 +139,13 @@ export default class DropshipController extends RE.Component {
       this.itemsContainer.name = "Items";
       RE.Runtime.scene.add(this.itemsContainer);
     }
+
+    if (!this.enemiesContainer) {
+      this.enemiesContainer = new THREE.Object3D()
+      this.enemiesContainer.name = "Enemies";
+      RE.Runtime.scene.add(this.enemiesContainer);
+    }
+
   }
 
   cooldown() {
@@ -215,7 +224,7 @@ export default class DropshipController extends RE.Component {
       if (this.queue.length === 0) {
         this.state = State.Hovering
       } else {
-        RE.Debug.clear()
+        // RE.Debug.clear()
         RE.Debug.log(`dropping. btw queue length is ${this.queue.length}, item length is ${this.queue.at(0)?.items.length}`)
         if (this.rateLimited) {
           RE.Debug.log('rate limited')
@@ -238,7 +247,7 @@ export default class DropshipController extends RE.Component {
             const itemPrefab = this.warehouse.items.find((m) => m.name === item)
 
             if (!itemPrefab) {
-              RE.Debug.logError(`Dropship could not find ${item}`)
+              RE.Debug.logError(`Dropship could not find ${item}. Known items are ${this.warehouse.items.map((i) => i.name).join(', ')}`)
             } else {
               if (this.flySFX) {
                 this.dropSFX.isPlaying && this.dropSFX.stop();
@@ -249,7 +258,7 @@ export default class DropshipController extends RE.Component {
               }
 
 
-              const itemObject = itemPrefab.instantiate(this.itemsContainer)
+              const itemObject = itemPrefab.instantiate((itemPrefab.name.includes('Kyberpod')) ? this.enemiesContainer : this.itemsContainer)
               let itemSpawnPoint = this.object3d.position.clone()
               itemSpawnPoint.add(this.getSpreadOffset(order.items.length))
               itemObject.position.copy(itemSpawnPoint)

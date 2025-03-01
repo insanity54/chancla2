@@ -61,7 +61,7 @@ export default class NPCFPSController extends RE.Component {
     if (!this.npcfpsWeapon) return false;
     const parent = this.npcfpsWeapon.object3d.parent
     const parentName = parent?.name
-    if (parentName !== 'Enemy Kyberpod') return false;
+    if (parentName !== 'EnemyKyberpod') return false;
     // return true if it's task is kill
     return (this.npcController.activeTaskAction === 'kill')
   }

@@ -31,3 +31,23 @@ When I type, "RE.traverseComponents" in VSCode, I wish the documentation for tha
 (alias) function traverseComponents(fn: (component: RE.Component, objectUUID: string, index: number) => void): void
 export traverseComponents
 ```
+
+
+### Prefabs behavior that makes sense
+
+The amount of times I've lost work to Prefabs is... a lot. I wish Prefabs were more intuitive, or more verbose in what they were doing. When I drop an item over an existing Prefab, what's it doing? Updating? Overwriting?
+
+
+### Better abstraction for getting a handle on a Component within an object in the scene
+
+I want a better way to accomplish what is done in the following example.
+
+```ts
+const warehouseObject = RE.Runtime.scene.getObjectByName("SolFront Warehouse") as THREE.Object3D;
+const warehouseComp = Warehouse.get(warehouseObject)
+```
+
+
+### Type to search for a filename in the Project file browser
+
+When I've got lots of audio files and I know the one I want, I'd like to type in it's name to find it quickly.
