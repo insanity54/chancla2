@@ -10,10 +10,12 @@ export default class Noisy extends RE.Component {
   @RE.props.checkbox() loop: boolean = false;
 
   start() {
-    this.spawnSFX.isPlaying && this.spawnSFX.stop();
-    this.spawnSFX.setRolloffFactor(this.rolloffFactor);
-    this.spawnSFX.setVolume(this.volume)
-    this.spawnSFX.play()
+    if (this.spawnSFX) {
+      this.spawnSFX.isPlaying && this.spawnSFX.stop();
+      this.spawnSFX.setRolloffFactor(this.rolloffFactor);
+      this.spawnSFX.setVolume(this.volume)
+      this.spawnSFX.play()
+    }
   }
 
   update() {

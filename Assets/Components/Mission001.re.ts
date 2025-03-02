@@ -8,6 +8,7 @@ import RogueCharacter from '@RE/RogueEngine/rogue-character/RogueCharacter.re';
 import NPCController from './NPCController.re';
 import { randomRange } from 'Assets/Helpers/util';
 import { shuffle } from 'Assets/Helpers/util';
+import MissionTrigger from './MissionTrigger.re';
 
 @RE.registerComponent
 export default class Mission001 extends RE.Component {
@@ -51,6 +52,20 @@ export default class Mission001 extends RE.Component {
   private troySpawn: THREE.Vector3;
   private playersContainer: THREE.Object3D;
   private defaultSpawn = new THREE.Vector3(0, 0, 0)
+
+  private voiceClips = [
+    "audioWompratStart",
+    "audioWompratMid",
+    "audioWompratEnd",
+    "audioInvasionStartVoice",
+    "audioInvasionEnd",
+    "audioThanksForPlaying",
+  ];
+
+  private musicClips = [
+    "audioInvasionStartMusic"
+  ]
+
 
   awake() {
 
@@ -102,21 +117,9 @@ export default class Mission001 extends RE.Component {
     this.initializeSpawnPoints()
     this.initializePlayersContainer()
 
-    const voiceClips = [
-      "audioWompratStart",
-      "audioWompratMid",
-      "audioWompratEnd",
-      "audioInvasionStartVoice",
-      "audioInvasionEnd",
-      "audioThanksForPlaying",
-    ];
 
-    const musicClips = [
-      "audioInvasionStartMusic"
-    ]
-
-    this.setAudioVolume(voiceClips, this.settings.voiceoverVolume)
-    this.setAudioVolume(musicClips, this.settings.musicVolume)
+    this.setAudioVolume(this.voiceClips, this.settings.voiceoverVolume)
+    this.setAudioVolume(this.musicClips, this.settings.musicVolume)
 
 
     this.missionTriggersGroup = RE.Runtime.scene.getObjectByName("MissionTriggers") as THREE.Object3D;
@@ -136,9 +139,19 @@ export default class Mission001 extends RE.Component {
     else if (this.phase === 9) this.waitForEnemyKyberpodsKilled(1);
   }
 
-  // trigger objects exist in the scene until they are tripped
+  public reset() {
+    this.phase = 0
+    this.voiceClips.concat(this.musicClips).forEach((clip) => {
+      if (this[clip]) this[clip].stop()
+    })
+  }
+
+  // trigger objects with true .triggered property tell us that the trigger has not been tripped
   triggerExists(name: string) {
-    return this.missionTriggersGroup.children.find((tObj) => tObj.name === name)
+    return this.missionTriggersGroup.children.find((tObj) => {
+      let tComponent = RE.getComponent(MissionTrigger, tObj)
+      return (tObj.name === name && tComponent.triggered === false)
+    })
   }
 
   enemyExists(name: string, count: number = 1) {
@@ -186,7 +199,7 @@ export default class Mission001 extends RE.Component {
     const dropshipPrefab = this.bisWarehouse.findItemPrefab(dropshipName)
 
     if (!dropshipPrefab) {
-      RE.Debug.logError(`${dropshipName} not found in ${this.bisWarehouse.name}`);
+      RE.Debug.logError(`${dropshipName} not found in ${this.bisWarehouse.name}. items found=${this.bisWarehouse.items.map((i) => i.name).join(', ')}`);
       return
     }
 
@@ -292,6 +305,9 @@ export default class Mission001 extends RE.Component {
     } else {
       this.audioThanksForPlaying.play()
       // @todo show credits
+      setTimeout(() => {
+        RE.App.loadScene("game-over")
+      }, 5000)
     }
     this.phase++
   }
@@ -316,7 +332,7 @@ export default class Mission001 extends RE.Component {
 
   waitForReturnToBase() {
     if (this.triggerExists('ReturnToBase')) return;
-    this.audioHomeStrike.play()
+    this.audioThanksForPlaying.play()
     this.phase++
   }
 

@@ -197,7 +197,7 @@ export default class NPCController extends RE.Component {
         // @todo   * [x] acquire target
 
         if (!this.target) this.acquireTarget(target, this.sensorRange);
-        if (this.target) {
+        if (this.target && this.characterController.body) {
 
 
             // @todo   * [x] look at target

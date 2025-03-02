@@ -241,14 +241,14 @@ export default class NPCFPSWeapon extends RE.Component {
         this.object3d.getWorldDirection(this.rayDir);
 
         const rigidbodies = RE.getComponents(RapierBody);
-        const bodies = rigidbodies.filter(body => body.object3d !== this.object3d.parent && body.type !== 1)
+        const bodies = rigidbodies.filter(body => body.object3d !== this.object3d.parent)
             .map(body => body.object3d);
 
         this.raycaster.set(this.rayOrigin, this.rayDir);
         const intersections = this.raycaster.intersectObjects(bodies, true);
 
         if (intersections.length > 0) {
-            RE.Debug.log(`intersections with ${intersections.length} RapierBodies. ${intersections.map(i => i.object.name).join(', ')}`)
+            // RE.Debug.log(`intersections with ${intersections.length} RapierBodies. ${intersections.map(i => i.object.name).join(', ')}`)
             return onHit(intersections[0]);
         }
 
@@ -266,7 +266,7 @@ export default class NPCFPSWeapon extends RE.Component {
             const intersections = this.raycaster.intersectObject(obj, true);
 
             if (intersections.length < 1) return;
-            RE.Debug.log(`intersections with ${intersections.length} RapierColliders (${intersections.map((i) => i.object.name).join(', ')})`)
+            // RE.Debug.log(`intersections with ${intersections.length} RapierColliders (${intersections.map((i) => i.object.name).join(', ')})`)
 
             onHit(intersections[0]);
         }

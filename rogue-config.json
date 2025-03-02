@@ -1,6 +1,15 @@
 {
-  "title": "Project",
-  "scenes": [],
+  "title": "Kybertrike",
+  "scenes": [
+    {
+      "name": "aurelia",
+      "uuid": "7a053bc2-9228-4d4a-b242-8791fa39b526"
+    },
+    {
+      "name": "thanks",
+      "uuid": "e2d07b73-2137-4398-9844-25c74970117a"
+    }
+  ],
   "projectVersion": 26,
   "lastOpenedScene": "/Assets/Scenes/aurelia.rogueScene",
   "tags": [

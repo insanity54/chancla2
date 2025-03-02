@@ -22,7 +22,11 @@ export default class Killable extends RE.Component {
     @RE.props.num() souls: number = 1;
     keepScore() {
         const game = Game.get()
-        game.kills += this.souls
+        if (this.character.type === "Enemy") {
+            game.kills += this.souls
+        } else {
+            game.deaths += this.souls
+        }
     }
 
     explode() {
@@ -40,9 +44,7 @@ export default class Killable extends RE.Component {
     }
 
     kill() {
-        if (this.character.type === "Enemy") {
-            this.keepScore()
-        }
+        this.keepScore()
         this.explode()
         setTimeout(this.cleanup, 2000)
     }

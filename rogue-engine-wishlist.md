@@ -51,3 +51,8 @@ const warehouseComp = Warehouse.get(warehouseObject)
 ### Type to search for a filename in the Project file browser
 
 When I've got lots of audio files and I know the one I want, I'd like to type in it's name to find it quickly.
+
+
+### Ability to cancel a drag & drop operation
+
+Sometimes I drag and change my mind before dropping. Other times I drag by mistake. There's no way to cancel. (unfulfilled expectation to press Esc to cancel)
