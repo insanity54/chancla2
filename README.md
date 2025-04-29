@@ -8,16 +8,16 @@ The final push to version 0.0.0
   * [x] Spawnpoints
   * [x] Towers
   * [x] Dropship
-  * [ ] Mission editor
-    * [ ] walk task
-    * [ ] kill task
+  * [x] Mission editor
+    * [x] walk task
+    * [x] kill task
     * [ ] wait task
     * [ ] emote task
     * [ ] sfx task
-  * [ ] NPC fires back
+  * [x] NPC fires back
   * [ ] Roller grenades
-  * [ ] VO lines
-  * [ ] Jumpjet
+  * [x] VO lines
+  * [x] Jumpjet
 
 
 ## Dropship voice lines

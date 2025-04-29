@@ -13,20 +13,21 @@
     "@dimforge/rapier3d-compat": "^0.14.0",
     "@types/three": "^0.165.0",
     "cors": "^2.8.5",
-    "express": "^4.17.1",
+    "express": "^4.21.2",
     "glob": "7.1.6",
-    "mkcert": "^1.4.0",
+    "mkcert": "^1.5.1",
     "three": "^0.165.0",
-    "three.quarks": "^0.15.5"
+    "three.quarks": "^0.15.7"
   },
   "devDependencies": {
     "cross-env": "^5.2.1",
     "esbuild-loader": "2.16.0",
-    "fork-ts-checker-webpack-plugin": "^6.1.0",
-    "tslib": "^1.9.3",
-    "typescript": "^5.4.5",
+    "fork-ts-checker-webpack-plugin": "^6.5.3",
+    "tslib": "^1.14.1",
+    "typescript": "^5.8.3",
     "webpack": "5.68.0",
     "webpack-cli": "4.9.2",
-    "webpack-merge": "^5.7.3"
-  }
+    "webpack-merge": "^5.10.0"
+  },
+  "packageManager": "pnpm@10.8.1+sha512.c50088ba998c67b8ca8c99df8a5e02fd2ae2e2b29aaf238feaa9e124248d3f48f9fb6db2424949ff901cffbb5e0f0cc1ad6aedb602cd29450751d11c35023677"
 }

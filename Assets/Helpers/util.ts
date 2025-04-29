@@ -11,6 +11,8 @@ export function randomInt(min: number, max: number): number {
 }
 
 
+
+
 export function lerpV3(a: THREE.Vector3, b: THREE.Vector3, t: number, h: number) {
   a.x = THREE.MathUtils.damp(a.x, b.x, t, h);
   a.y = THREE.MathUtils.damp(a.y, b.y, t, h);

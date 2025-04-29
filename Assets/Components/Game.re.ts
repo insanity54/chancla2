@@ -68,11 +68,12 @@ export default class Game extends RE.Component {
   }
 
   doWin() {
+    // this never occurs because the mission isn't over based on kills. Mission001 switches scenes for us.
     this.win = true
     this.winSFX.play(0.5)
     setTimeout(() => {
-      RE.App.loadScene('thanks')
-    }, 6000)
+      RE.App.loadScene("thanks")
+    }, 7000)
   }
 
   doLose() {
@@ -107,18 +108,18 @@ export default class Game extends RE.Component {
 
   // }
 
-  assertPlayer() {
-    let player = RE.Runtime.scene.getObjectByName("FirstPersonCharacter") as THREE.Object3D;
-    if (!player) {
-      let playerGroup = RE.Runtime.scene.getObjectByName("Players")
-      if (!playerGroup) RE.Debug.logError("Cannot find Players group");
-      let playerObject = this.playerPrefab.instantiate(playerGroup)
-      const spawnPointCount = this.spawnpointsContainer.children.length
-      let selectedSpawnPoint = this.spawnpointsContainer.children[randomInt(0, spawnPointCount)]
-      // RE.Debug.log(`spawnPointCount=${spawnPointCount} selectedSpawnPoint=${selectedSpawnPoint.name}`)
-      selectedSpawnPoint.getWorldPosition(playerObject.position)
-    }
-  }
+  // assertPlayer() {
+  //   let player = RE.Runtime.scene.getObjectByName("FirstPersonCharacter") as THREE.Object3D;
+  //   if (!player) {
+  //     let playerGroup = RE.Runtime.scene.getObjectByName("Players")
+  //     if (!playerGroup) RE.Debug.logError("Cannot find Players group");
+  //     let playerObject = this.playerPrefab.instantiate(playerGroup)
+  //     const spawnPointCount = this.spawnpointsContainer.children.length
+  //     let selectedSpawnPoint = this.spawnpointsContainer.children[randomInt(0, spawnPointCount)]
+  //     // RE.Debug.log(`spawnPointCount=${spawnPointCount} selectedSpawnPoint=${selectedSpawnPoint.name}`)
+  //     selectedSpawnPoint.getWorldPosition(playerObject.position)
+  //   }
+  // }
 
   update() {
     if (!this.win && !this.lose) {
@@ -127,7 +128,6 @@ export default class Game extends RE.Component {
 
       } else if (this.loseCondition()) {
         this.doLose()
-
       }
     }
     // this.assertPlayer()
@@ -152,10 +152,10 @@ export default class Game extends RE.Component {
     this.hud.start()
   }
 
-  resetMission() {
-    let missionComponent = RE.getComponent(Mission001, this.object3d)
-    missionComponent.reset()
-  }
+  // resetMission() {
+  //   let missionComponent = RE.getComponent(Mission001, this.object3d)
+  //   missionComponent.reset()
+  // }
 
   /**
    * reset the game
@@ -165,18 +165,18 @@ export default class Game extends RE.Component {
    *   * respawn player
    *   * setup HUD
    */
-  reset() {
-    this.win = false;
-    this.lose = false;
-    this.kills = 0;
-    this.deaths = 0;
+  // reset() {
+  //   this.win = false;
+  //   this.lose = false;
+  //   this.kills = 0;
+  //   this.deaths = 0;
 
-    this.clearEnemies()
-    this.resetMission()
-    this.resetMissionTriggers()
-    this.assertPlayer()
-    this.setupHUD()
-  }
+  //   this.clearEnemies()
+  //   // this.resetMission()
+  //   this.resetMissionTriggers()
+  //   this.assertPlayer()
+  //   this.setupHUD()
+  // }
 
 
 

@@ -230,7 +230,7 @@ export default class KTFPSController extends RE.Component {
         // get the appropriate weapon from the warehouse
         const warehouseObject = RE.Runtime.scene.getObjectByName("SolFront Warehouse") as THREE.Object3D;
         const warehouseComp = Warehouse.get(warehouseObject)
-        const weaponPrefab = warehouseComp.findItemPrefab(weaponName)
+        const weaponPrefab = warehouseComp.getPrefab(weaponName)
 
         if (!weaponPrefab) {
           RE.Debug.logError(`failed to get ${weaponName} prefab`)

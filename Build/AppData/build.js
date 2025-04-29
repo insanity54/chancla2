@@ -407,21 +407,17 @@ let DropshipController = class extends rogue_engine__WEBPACK_IMPORTED_MODULE_0__
       if (this.queue.length === 0) {
         this.state = 0;
       } else {
-        rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Debug.log(`dropping. btw queue length is ${this.queue.length}, item length is ${this.queue.at(0)?.items.length}`);
         if (this.rateLimited) {
-          rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Debug.log("rate limited");
         } else {
-          rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Debug.log("actually dropping");
           const order = this.queue[0];
           const startItemCount = order.items.length;
-          rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Debug.log(`order=${JSON.stringify(order)}`);
           const item = order.items.shift();
           if (!item) {
             this.queue.shift();
             this.state = 0;
           } else {
-            const itemPrefab = this.warehouse.items.find((m) => m.name === item);
-            if (!itemPrefab) {
+            const { prefab, container } = this.warehouse.getPrefab(item);
+            if (!prefab) {
               rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Debug.logError(`Dropship could not find ${item}. Known items are ${this.warehouse.items.map((i) => i.name).join(", ")}`);
             } else {
               if (this.flySFX) {
@@ -431,7 +427,7 @@ let DropshipController = class extends rogue_engine__WEBPACK_IMPORTED_MODULE_0__
                 this.dropSFX.setRolloffFactor(0.07);
                 this.dropSFX.play();
               }
-              const itemObject = itemPrefab.instantiate(itemPrefab.name.includes("Kyberpod") ? this.enemiesContainer : this.itemsContainer);
+              const itemObject = prefab.instantiate(container === "Enemies" ? this.enemiesContainer : this.itemsContainer);
               let itemSpawnPoint = this.object3d.position.clone();
               itemSpawnPoint.add(this.getSpreadOffset(order.items.length));
               itemObject.position.copy(itemSpawnPoint);
@@ -671,13 +667,11 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "default": () => (/* binding */ Game)
 /* harmony export */ });
-/* harmony import */ var Assets_Helpers_util__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! Assets/Helpers/util */ "./Assets/Helpers/util.ts");
-/* harmony import */ var rogue_engine__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! rogue-engine */ "rogue-engine");
-/* harmony import */ var rogue_engine__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__webpack_require__.n(rogue_engine__WEBPACK_IMPORTED_MODULE_1__);
-/* harmony import */ var _UIComponent_re__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./UIComponent.re */ "./Assets/Components/UIComponent.re.ts");
-/* harmony import */ var _MissionTrigger_re__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./MissionTrigger.re */ "./Assets/Components/MissionTrigger.re.ts");
-/* harmony import */ var _Mission001_re__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! ./Mission001.re */ "./Assets/Components/Mission001.re.ts");
-/* harmony import */ var _HUD_re__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! ./HUD.re */ "./Assets/Components/HUD.re.ts");
+/* harmony import */ var rogue_engine__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! rogue-engine */ "rogue-engine");
+/* harmony import */ var rogue_engine__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(rogue_engine__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _UIComponent_re__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./UIComponent.re */ "./Assets/Components/UIComponent.re.ts");
+/* harmony import */ var _MissionTrigger_re__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./MissionTrigger.re */ "./Assets/Components/MissionTrigger.re.ts");
+/* harmony import */ var _HUD_re__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ./HUD.re */ "./Assets/Components/HUD.re.ts");
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 var __name = (target, value) => __defProp(target, "name", { value, configurable: true });
@@ -694,9 +688,7 @@ var __decorateClass = (decorators, target, key, kind) => {
 
 
 
-
-
-let Game = class extends rogue_engine__WEBPACK_IMPORTED_MODULE_1__.Component {
+let Game = class extends rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Component {
   constructor() {
     super(...arguments);
     this.kills = 0;
@@ -709,7 +701,7 @@ let Game = class extends rogue_engine__WEBPACK_IMPORTED_MODULE_1__.Component {
     this.playerSpawn = "PlayerSpawn";
   }
   get spawnpointsContainer() {
-    let spawnpointsContainer = rogue_engine__WEBPACK_IMPORTED_MODULE_1__.Runtime.scene.getObjectByName("PlayerSpawnPoints");
+    let spawnpointsContainer = rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Runtime.scene.getObjectByName("PlayerSpawnPoints");
     if (!spawnpointsContainer) {
       throw new Error("PlayerSpawnPoints container is missing!");
     }
@@ -729,28 +721,16 @@ let Game = class extends rogue_engine__WEBPACK_IMPORTED_MODULE_1__.Component {
     this.win = true;
     this.winSFX.play(0.5);
     setTimeout(() => {
-      rogue_engine__WEBPACK_IMPORTED_MODULE_1__.App.loadScene("thanks");
-    }, 6e3);
+      rogue_engine__WEBPACK_IMPORTED_MODULE_0__.App.loadScene("thanks");
+    }, 7e3);
   }
   doLose() {
     this.lose = true;
     this.loseSFX.play(0.5);
     this.gameOverUI.show();
     setTimeout(() => {
-      rogue_engine__WEBPACK_IMPORTED_MODULE_1__.App.loadScene("thanks");
+      rogue_engine__WEBPACK_IMPORTED_MODULE_0__.App.loadScene("thanks");
     }, 6e3);
-  }
-  assertPlayer() {
-    let player = rogue_engine__WEBPACK_IMPORTED_MODULE_1__.Runtime.scene.getObjectByName("FirstPersonCharacter");
-    if (!player) {
-      let playerGroup = rogue_engine__WEBPACK_IMPORTED_MODULE_1__.Runtime.scene.getObjectByName("Players");
-      if (!playerGroup)
-        rogue_engine__WEBPACK_IMPORTED_MODULE_1__.Debug.logError("Cannot find Players group");
-      let playerObject = this.playerPrefab.instantiate(playerGroup);
-      const spawnPointCount = this.spawnpointsContainer.children.length;
-      let selectedSpawnPoint = this.spawnpointsContainer.children[(0,Assets_Helpers_util__WEBPACK_IMPORTED_MODULE_0__.randomInt)(0, spawnPointCount)];
-      selectedSpawnPoint.getWorldPosition(playerObject.position);
-    }
   }
   update() {
     if (!this.win && !this.lose) {
@@ -762,79 +742,64 @@ let Game = class extends rogue_engine__WEBPACK_IMPORTED_MODULE_1__.Component {
     }
   }
   clearEnemies() {
-    let enemiesContainer = rogue_engine__WEBPACK_IMPORTED_MODULE_1__.Runtime.scene.getObjectByName("Enemies");
+    let enemiesContainer = rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Runtime.scene.getObjectByName("Enemies");
     enemiesContainer.children.forEach((enemy) => {
       enemy.parent?.remove(enemy);
     });
   }
   resetMissionTriggers() {
-    let missionTriggersContainer = rogue_engine__WEBPACK_IMPORTED_MODULE_1__.Runtime.scene.getObjectByName("MissionTriggers");
+    let missionTriggersContainer = rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Runtime.scene.getObjectByName("MissionTriggers");
     missionTriggersContainer?.children.forEach((mtObj) => {
-      let mtComponent = rogue_engine__WEBPACK_IMPORTED_MODULE_1__.getComponent(_MissionTrigger_re__WEBPACK_IMPORTED_MODULE_3__["default"], mtObj);
+      let mtComponent = rogue_engine__WEBPACK_IMPORTED_MODULE_0__.getComponent(_MissionTrigger_re__WEBPACK_IMPORTED_MODULE_2__["default"], mtObj);
       mtComponent.reset();
     });
   }
   setupHUD() {
     this.hud.start();
   }
-  resetMission() {
-    let missionComponent = rogue_engine__WEBPACK_IMPORTED_MODULE_1__.getComponent(_Mission001_re__WEBPACK_IMPORTED_MODULE_4__["default"], this.object3d);
-    missionComponent.reset();
-  }
-  reset() {
-    this.win = false;
-    this.lose = false;
-    this.kills = 0;
-    this.deaths = 0;
-    this.clearEnemies();
-    this.resetMission();
-    this.resetMissionTriggers();
-    this.assertPlayer();
-    this.setupHUD();
-  }
 };
 __name(Game, "Game");
 __decorateClass([
-  rogue_engine__WEBPACK_IMPORTED_MODULE_1__.props.num()
+  rogue_engine__WEBPACK_IMPORTED_MODULE_0__.props.num()
 ], Game.prototype, "kills", 2);
 __decorateClass([
-  rogue_engine__WEBPACK_IMPORTED_MODULE_1__.props.num()
+  rogue_engine__WEBPACK_IMPORTED_MODULE_0__.props.num()
 ], Game.prototype, "deaths", 2);
 __decorateClass([
-  rogue_engine__WEBPACK_IMPORTED_MODULE_1__.props.num()
+  rogue_engine__WEBPACK_IMPORTED_MODULE_0__.props.num()
 ], Game.prototype, "easterEggs", 2);
 __decorateClass([
-  rogue_engine__WEBPACK_IMPORTED_MODULE_1__.props.num()
+  rogue_engine__WEBPACK_IMPORTED_MODULE_0__.props.num()
 ], Game.prototype, "killsToWin", 2);
 __decorateClass([
-  rogue_engine__WEBPACK_IMPORTED_MODULE_1__.props.checkbox()
+  rogue_engine__WEBPACK_IMPORTED_MODULE_0__.props.checkbox()
 ], Game.prototype, "win", 2);
 __decorateClass([
-  rogue_engine__WEBPACK_IMPORTED_MODULE_1__.props.checkbox()
+  rogue_engine__WEBPACK_IMPORTED_MODULE_0__.props.checkbox()
 ], Game.prototype, "lose", 2);
 __decorateClass([
-  rogue_engine__WEBPACK_IMPORTED_MODULE_1__.props.audio()
+  rogue_engine__WEBPACK_IMPORTED_MODULE_0__.props.audio()
 ], Game.prototype, "winSFX", 2);
 __decorateClass([
-  rogue_engine__WEBPACK_IMPORTED_MODULE_1__.props.audio()
+  rogue_engine__WEBPACK_IMPORTED_MODULE_0__.props.audio()
 ], Game.prototype, "loseSFX", 2);
 __decorateClass([
-  rogue_engine__WEBPACK_IMPORTED_MODULE_1__.props.num()
+  rogue_engine__WEBPACK_IMPORTED_MODULE_0__.props.num()
 ], Game.prototype, "volume", 2);
 __decorateClass([
-  rogue_engine__WEBPACK_IMPORTED_MODULE_1__.props.text()
+  rogue_engine__WEBPACK_IMPORTED_MODULE_0__.props.text()
 ], Game.prototype, "playerSpawn", 2);
 __decorateClass([
-  rogue_engine__WEBPACK_IMPORTED_MODULE_1__.props.prefab()
+  rogue_engine__WEBPACK_IMPORTED_MODULE_0__.props.prefab()
 ], Game.prototype, "playerPrefab", 2);
 __decorateClass([
-  rogue_engine__WEBPACK_IMPORTED_MODULE_1__.props.component(_UIComponent_re__WEBPACK_IMPORTED_MODULE_2__["default"])
+  rogue_engine__WEBPACK_IMPORTED_MODULE_0__.props.component(_UIComponent_re__WEBPACK_IMPORTED_MODULE_1__["default"])
 ], Game.prototype, "gameOverUI", 2);
 __decorateClass([
-  _HUD_re__WEBPACK_IMPORTED_MODULE_5__["default"].require()
+  _HUD_re__WEBPACK_IMPORTED_MODULE_3__["default"].require()
 ], Game.prototype, "hud", 2);
 Game = __decorateClass([
-  rogue_engine__WEBPACK_IMPORTED_MODULE_1__.registerComponent
+  rogue_engine__WEBPACK_IMPORTED_MODULE_0__.registerComponent
 ], Game);
 
 
@@ -1180,7 +1145,7 @@ let KTFPSController = class extends rogue_engine__WEBPACK_IMPORTED_MODULE_1__.Co
         rogue_engine__WEBPACK_IMPORTED_MODULE_1__.Debug.log(`Looking for weaponName=${weaponName} from intersectingObject.name=${intersectingObject.name}`);
         const warehouseObject = rogue_engine__WEBPACK_IMPORTED_MODULE_1__.Runtime.scene.getObjectByName("SolFront Warehouse");
         const warehouseComp = _Warehouse_re__WEBPACK_IMPORTED_MODULE_10__["default"].get(warehouseObject);
-        const weaponPrefab = warehouseComp.findItemPrefab(weaponName);
+        const weaponPrefab = warehouseComp.getPrefab(weaponName);
         if (!weaponPrefab) {
           rogue_engine__WEBPACK_IMPORTED_MODULE_1__.Debug.logError(`failed to get ${weaponName} prefab`);
           return;
@@ -2231,26 +2196,14 @@ let Mission001 = class extends rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Compone
     else if (this.phase === 9)
       this.waitForEnemyKyberpodsKilled(1);
   }
-  reset() {
-    this.phase = 0;
-    this.voiceClips.concat(this.musicClips).forEach((clip) => {
-      if (this[clip])
-        this[clip].stop();
-    });
-  }
   triggerExists(name) {
     return this.missionTriggersGroup.children.find((tObj) => {
       let tComponent = rogue_engine__WEBPACK_IMPORTED_MODULE_0__.getComponent(_MissionTrigger_re__WEBPACK_IMPORTED_MODULE_8__["default"], tObj);
       return tObj.name === name && tComponent.triggered === false;
     });
   }
-  enemyExists(name, count = 1) {
-    let matches = 0;
-    for (let i = 0; i < this.enemiesGroup.children.length; i++) {
-      if (this.enemiesGroup.children[i].name === name)
-        matches++;
-    }
-    if (matches === count)
+  enemyExists(_name, count = 1) {
+    if (this.enemiesGroup.children.length === count)
       return true;
     else
       return false;
@@ -2265,9 +2218,10 @@ let Mission001 = class extends rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Compone
     if (this.triggerExists("InvasionStart"))
       return;
     const dropshipName = "BISDropship";
-    const dropshipPrefab = this.bisWarehouse.findItemPrefab(dropshipName);
+    const { prefab: dropshipPrefab } = this.bisWarehouse.getPrefab(dropshipName);
+    rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Debug.log(`items found=${this.bisWarehouse.items.map((i) => i.name).join(", ")} itemNames=${this.bisWarehouse.itemsNames.map((i) => i).join(", ")}`);
     if (!dropshipPrefab) {
-      rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Debug.logError(`${dropshipName} not found in ${this.bisWarehouse.name}. items found=${this.bisWarehouse.items.map((i) => i.name).join(", ")}`);
+      rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Debug.logError(`${dropshipName} not found in ${this.bisWarehouse.name}`);
       return;
     }
     let orders = [
@@ -2300,10 +2254,13 @@ let Mission001 = class extends rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Compone
     this.phase++;
   }
   waitForThreeEnemyKyberpods() {
-    if (!this.enemyExists("EnemyKyberpod", 3))
+    if (!this.enemyExists("EnemyKyberpod", 3)) {
+      rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Debug.log(`there are ${this.enemiesGroup.children.length} enemies.`);
       return;
+    }
     rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Debug.log("THREE E KYBERPODSS!!!!! 33333333");
-    let kyberpods = this.enemiesGroup.children.filter((enemy) => enemy.name === "EnemyKyberpod");
+    rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Debug.log(`enemies=${this.enemiesGroup.children.map((e) => e.name).join(", ")}`);
+    let kyberpods = this.enemiesGroup.children;
     kyberpods.forEach((kyberpod) => {
       let npcControllerComponent = rogue_engine__WEBPACK_IMPORTED_MODULE_0__.getComponent(_NPCController_re__WEBPACK_IMPORTED_MODULE_6__["default"], kyberpod);
       npcControllerComponent.resetTasks();
@@ -2345,7 +2302,7 @@ let Mission001 = class extends rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Compone
       return;
     if (iteration === 0) {
       let troyKyberpodName = "TroyKyberpod";
-      let troyPrefab = this.sfWarehouse.findItemPrefab(troyKyberpodName);
+      let { prefab: troyPrefab, container } = this.sfWarehouse.getPrefab(troyKyberpodName);
       if (!troyPrefab) {
         rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Debug.logError(`${troyKyberpodName} not found`);
       } else {
@@ -2356,19 +2313,19 @@ let Mission001 = class extends rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Compone
     } else {
       this.audioThanksForPlaying.play();
       setTimeout(() => {
-        rogue_engine__WEBPACK_IMPORTED_MODULE_0__.App.loadScene("game-over");
+        rogue_engine__WEBPACK_IMPORTED_MODULE_0__.App.loadScene("thanks");
       }, 5e3);
     }
     this.phase++;
   }
   waitForWompratKilled() {
-    if (this.enemyExists("SpacePig1") && this.enemyExists("SpacePig2"))
+    if (this.enemyExists("_", 2))
       return;
     this.audioWompratMid.play();
     this.phase++;
   }
   waitForWompratsKilled() {
-    if (this.enemyExists("SpacePig1") || this.enemyExists("SpacePig2"))
+    if (this.enemyExists("_", 1))
       return;
     this.audioWompratEnd.play();
     this.phase++;
@@ -4413,22 +4370,37 @@ var __decorateClass = (decorators, target, key, kind) => {
 
 let Warehouse = class extends rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Component {
   awake() {
+    if (this.items.length !== this.itemsNames.length) {
+      rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Debug.logError(`Warehouse ${this.object3d.name} items length (${this.items.length}) MUST be the same length as itemsNames (${this.itemsNames.length}). Have you named all the prefabs in this Warehouse?`);
+    }
+    if (this.items.length !== this.itemsContainers.length) {
+      rogue_engine__WEBPACK_IMPORTED_MODULE_0__.Debug.logError(`Warehouse ${this.object3d.name} items length (${this.items.length}) MUST be the same length as itemsContainers (${this.itemsContainers.length}). Have you assigned containers for all the prefabs in this Warehouse?`);
+    }
   }
-  start() {
-  }
-  update() {
-  }
-  findItemPrefab(name) {
-    if (!name)
-      throw new Error(`findItemPrefab() 'name' param is required`);
-    const mod = this.items.find((m) => m.name === name);
-    return !!mod ? mod : false;
+  getPrefab(name) {
+    let i = 0;
+    let pre;
+    let cont;
+    this.items.forEach((p) => {
+      if (this.itemsNames[i] == name) {
+        pre = p;
+        cont = this.itemsContainers[i];
+      }
+      i++;
+    });
+    return { prefab: pre, container: cont };
   }
 };
 __name(Warehouse, "Warehouse");
 __decorateClass([
   rogue_engine__WEBPACK_IMPORTED_MODULE_0__.props.list.prefab()
 ], Warehouse.prototype, "items", 2);
+__decorateClass([
+  rogue_engine__WEBPACK_IMPORTED_MODULE_0__.props.list.text()
+], Warehouse.prototype, "itemsNames", 2);
+__decorateClass([
+  rogue_engine__WEBPACK_IMPORTED_MODULE_0__.props.list.text()
+], Warehouse.prototype, "itemsContainers", 2);
 Warehouse = __decorateClass([
   rogue_engine__WEBPACK_IMPORTED_MODULE_0__.registerComponent
 ], Warehouse);
@@ -19523,4 +19495,4 @@ class CSS2DRenderer {
 ;
 });
 //# sourceMappingURL=rogue-engine-user-scripts.js.map
-window['rogue-engine'].App.play({"title":"Kybertrike","scenes":[{"name":"aurelia","uuid":"7a053bc2-9228-4d4a-b242-8791fa39b526"},{"name":"thanks","uuid":"e2d07b73-2137-4398-9844-25c74970117a"}],"assetPaths":{"e084c321-82af-4cd0-bd16-87cece8152f9":"AppData/e084c321-82af-4cd0-bd16-87cece8152f9.png","dd0dfcdc-8b3e-4755-bec2-8ff626e834b0":"AppData/dd0dfcdc-8b3e-4755-bec2-8ff626e834b0.png","52e3d5f8-beba-4155-b246-1bf42f6c98b9":"AppData/52e3d5f8-beba-4155-b246-1bf42f6c98b9.png","a6dccfc9-e291-45f3-b9fe-94469d2659fa":"AppData/a6dccfc9-e291-45f3-b9fe-94469d2659fa.png","e3b6d451-a400-428a-9a84-77b65c7fe592":"AppData/e3b6d451-a400-428a-9a84-77b65c7fe592.png","2a865fea-27ab-48ae-aa40-5851f322ea85":"AppData/2a865fea-27ab-48ae-aa40-5851f322ea85.png","5dc536dd-47bc-475f-b06c-3430fcd51c31":"AppData/5dc536dd-47bc-475f-b06c-3430fcd51c31.mp3","50580fd3-4860-447c-8389-fd37ec1e2181":"AppData/50580fd3-4860-447c-8389-fd37ec1e2181.mp3","508b0291-edd9-4ffb-943c-8a007faf9144":"AppData/508b0291-edd9-4ffb-943c-8a007faf9144.webp","73e559b4-89af-4b75-9f52-93f15a6ba429":"AppData/73e559b4-89af-4b75-9f52-93f15a6ba429.rogueMaterial","71164f2e-d73f-4802-b438-326fed5af9a2":"AppData/71164f2e-d73f-4802-b438-326fed5af9a2.mp3","25832445-4db7-4c19-a710-e64f07a3e7d2":"AppData/25832445-4db7-4c19-a710-e64f07a3e7d2.roguePrefab","2460849b-13d5-454e-85e3-d2f1b0afab95":"AppData/2460849b-13d5-454e-85e3-d2f1b0afab95.mp3","7972a655-3b58-4f6a-9072-2f571da139b2":"AppData/7972a655-3b58-4f6a-9072-2f571da139b2.roguePrefab","c8a0325d-f650-4c17-b40a-6c1b8b163752":"AppData/c8a0325d-f650-4c17-b40a-6c1b8b163752.mp3","a41c5ee8-e17b-4fe0-b3fd-fa07139c1272":"AppData/a41c5ee8-e17b-4fe0-b3fd-fa07139c1272.mp3","8f0ad20f-4c21-4411-afd4-aa85bb6df266":"AppData/8f0ad20f-4c21-4411-afd4-aa85bb6df266.mp3","a8079d43-f184-4a41-a7bc-0abd3770d803":"AppData/a8079d43-f184-4a41-a7bc-0abd3770d803.mp3","5a1e7bc1-8004-4af3-86e4-304328154c75":"AppData/5a1e7bc1-8004-4af3-86e4-304328154c75.mp3","d6890413-3102-47bd-9639-a7d7596b6e02":"AppData/d6890413-3102-47bd-9639-a7d7596b6e02.mp3","a6afa3d0-2986-4ed2-a814-1f8ef038d2e2":"AppData/a6afa3d0-2986-4ed2-a814-1f8ef038d2e2.mp3","501d6286-8ae7-4a06-a28a-69c676d85662":"AppData/501d6286-8ae7-4a06-a28a-69c676d85662.mp3","e3e19e6d-8332-4da0-b842-b891f998e94d":"AppData/e3e19e6d-8332-4da0-b842-b891f998e94d.roguePrefab","2a67047d-1eaf-4a84-ae6d-390ef1314673":"AppData/2a67047d-1eaf-4a84-ae6d-390ef1314673.rogueAnimation","99fd57b0-0a0f-4321-b6fc-4dca61cd315b":"AppData/99fd57b0-0a0f-4321-b6fc-4dca61cd315b.rogueAnimation","01f70a58-7582-444c-8c4a-66329ff09931":"AppData/01f70a58-7582-444c-8c4a-66329ff09931.rogueAnimation","21d19a47-cf75-43b0-bf69-dbf7d276db2e":"AppData/21d19a47-cf75-43b0-bf69-dbf7d276db2e.rogueAnimation","809bd54b-fbb9-40c2-a37a-cafbba813be4":"AppData/809bd54b-fbb9-40c2-a37a-cafbba813be4.png","d487553e-ba60-4013-8726-3c2e16acc636":"AppData/d487553e-ba60-4013-8726-3c2e16acc636.rogueMaterial","a06d6d99-5741-43c8-b7f9-66ca72ab3cbb":"AppData/a06d6d99-5741-43c8-b7f9-66ca72ab3cbb.roguePrefab","2a8eee06-a1ab-45b7-bd42-783b4cabf919":"AppData/2a8eee06-a1ab-45b7-bd42-783b4cabf919.mp3","79096c75-807c-4f51-adf1-14d353550f28":"AppData/79096c75-807c-4f51-adf1-14d353550f28.roguePrefab","eb03030f-dfe4-42dc-a67b-ea0008688dd8":"AppData/eb03030f-dfe4-42dc-a67b-ea0008688dd8.roguePrefab","1eb7f433-a1f7-4b23-9b6a-1e3969759604":"AppData/1eb7f433-a1f7-4b23-9b6a-1e3969759604.mp3","e94bb18d-2871-4ff9-bc11-c300c8dd694c":"AppData/e94bb18d-2871-4ff9-bc11-c300c8dd694c.mp3","d1a036eb-c87d-484e-92fe-d48c8221da03":"AppData/d1a036eb-c87d-484e-92fe-d48c8221da03.png","8b8cc53f-ec8d-4b27-9d20-4216878fb4f2":"AppData/8b8cc53f-ec8d-4b27-9d20-4216878fb4f2.rogueMaterial","a5527603-ddb6-40e3-8f19-1b478705ee60":"AppData/a5527603-ddb6-40e3-8f19-1b478705ee60.png","2e06d724-2c3b-4949-b093-0795e2879d2d":"AppData/2e06d724-2c3b-4949-b093-0795e2879d2d.rogueMaterial","025eab40-ab86-465d-92de-19743ea0b236":"AppData/025eab40-ab86-465d-92de-19743ea0b236.roguePrefab","9819c112-e719-46fa-b61d-afbe212cb868":"AppData/9819c112-e719-46fa-b61d-afbe212cb868.roguePrefab","ec63f79b-5053-4505-a19e-d28fa57ccfd9":"AppData/ec63f79b-5053-4505-a19e-d28fa57ccfd9.roguePrefab","d64037fa-4652-4c34-9214-6c46eca9c333":"AppData/d64037fa-4652-4c34-9214-6c46eca9c333.mp3","41833a87-7c8f-4ebb-b328-6105005fb83e":"AppData/41833a87-7c8f-4ebb-b328-6105005fb83e.roguePrefab","b2a356b6-10e4-46bc-bf2f-76ca48602552":"AppData/b2a356b6-10e4-46bc-bf2f-76ca48602552.roguePrefab","797cbea5-15c5-4f05-8b9e-d585a7719653":"AppData/797cbea5-15c5-4f05-8b9e-d585a7719653.rogueAnimation","d163a618-9a53-4740-bcf6-2782840c9e03":"AppData/d163a618-9a53-4740-bcf6-2782840c9e03.mp3","589b1468-57a2-4679-9003-5930bffef7d5":"AppData/589b1468-57a2-4679-9003-5930bffef7d5.mp3","974c523f-a9d3-4e88-a821-8143ad9a9e9d":"AppData/974c523f-a9d3-4e88-a821-8143ad9a9e9d.roguePrefab","6ac404f7-62b5-4660-a33f-86addd4e4f2a":"AppData/6ac404f7-62b5-4660-a33f-86addd4e4f2a.mp3","fd569379-693b-4ecc-807d-d3756cfc4c8f":"AppData/fd569379-693b-4ecc-807d-d3756cfc4c8f.rogueMaterial","44a42f0b-cc96-4eab-82c0-75c124162b78":"AppData/44a42f0b-cc96-4eab-82c0-75c124162b78.roguePrefab","e79b4c23-ff0c-4dda-b0bc-dae1584f59d1":"AppData/e79b4c23-ff0c-4dda-b0bc-dae1584f59d1.mp3","5c1df278-95cf-482b-b601-01886b304f95":"AppData/5c1df278-95cf-482b-b601-01886b304f95.roguePrefab","c0e6ce73-5a0e-4e47-8032-7fe9740edb48":"AppData/c0e6ce73-5a0e-4e47-8032-7fe9740edb48.mp3","739da640-d87f-4c83-9082-a1eb6593b6da":"AppData/739da640-d87f-4c83-9082-a1eb6593b6da.rogueAnimation","ec8046a3-ff1d-47ae-b198-b174716f9e62":"AppData/ec8046a3-ff1d-47ae-b198-b174716f9e62.rogueAnimation","035a623a-0876-4963-be1a-4c611b6071b6":"AppData/035a623a-0876-4963-be1a-4c611b6071b6.mp3","171fcaee-e022-4787-bc61-9297538db3b9":"AppData/171fcaee-e022-4787-bc61-9297538db3b9.roguePrefab","780aebe8-73bc-4715-aa6e-d7c8f2c71d24":"AppData/780aebe8-73bc-4715-aa6e-d7c8f2c71d24.png","3a72165d-f078-4974-8a03-c1cc625acb89":"AppData/3a72165d-f078-4974-8a03-c1cc625acb89.rogueMaterial","0a23b2b5-dd40-4f1a-b15e-20d60aa40fc9":"AppData/0a23b2b5-dd40-4f1a-b15e-20d60aa40fc9.png","10dfcef8-1e4c-484e-b2bd-042f7395a3db":"AppData/10dfcef8-1e4c-484e-b2bd-042f7395a3db.rogueMaterial","dab4cf1f-5fb3-4a64-8f40-f2730a479b92":"AppData/dab4cf1f-5fb3-4a64-8f40-f2730a479b92.png","6d933ac3-433f-4a02-a628-a8b20eab1a37":"AppData/6d933ac3-433f-4a02-a628-a8b20eab1a37.rogueMaterial","2ca25169-d463-441c-a76a-9006e329e8e8":"AppData/2ca25169-d463-441c-a76a-9006e329e8e8.png","6c0835ba-c61b-48f4-8a93-23eb0c7ac419":"AppData/6c0835ba-c61b-48f4-8a93-23eb0c7ac419.rogueMaterial","cd03d3ea-60b7-493d-ab75-3142b18cc527":"AppData/cd03d3ea-60b7-493d-ab75-3142b18cc527.png","5c60732a-ffbc-401a-b073-4d882efa1c85":"AppData/5c60732a-ffbc-401a-b073-4d882efa1c85.rogueMaterial","7a053bc2-9228-4d4a-b242-8791fa39b526":"AppData/7a053bc2-9228-4d4a-b242-8791fa39b526.rogueScene","e2d07b73-2137-4398-9844-25c74970117a":"AppData/e2d07b73-2137-4398-9844-25c74970117a.rogueScene"}});
+window['rogue-engine'].App.play({"title":"Kybertrike","scenes":[{"name":"aurelia","uuid":"7a053bc2-9228-4d4a-b242-8791fa39b526"},{"name":"thanks","uuid":"e2d07b73-2137-4398-9844-25c74970117a"}],"assetPaths":{"e084c321-82af-4cd0-bd16-87cece8152f9":"AppData/e084c321-82af-4cd0-bd16-87cece8152f9.png","dd0dfcdc-8b3e-4755-bec2-8ff626e834b0":"AppData/dd0dfcdc-8b3e-4755-bec2-8ff626e834b0.png","52e3d5f8-beba-4155-b246-1bf42f6c98b9":"AppData/52e3d5f8-beba-4155-b246-1bf42f6c98b9.png","a6dccfc9-e291-45f3-b9fe-94469d2659fa":"AppData/a6dccfc9-e291-45f3-b9fe-94469d2659fa.png","e3b6d451-a400-428a-9a84-77b65c7fe592":"AppData/e3b6d451-a400-428a-9a84-77b65c7fe592.png","2a865fea-27ab-48ae-aa40-5851f322ea85":"AppData/2a865fea-27ab-48ae-aa40-5851f322ea85.png","5dc536dd-47bc-475f-b06c-3430fcd51c31":"AppData/5dc536dd-47bc-475f-b06c-3430fcd51c31.mp3","50580fd3-4860-447c-8389-fd37ec1e2181":"AppData/50580fd3-4860-447c-8389-fd37ec1e2181.mp3","508b0291-edd9-4ffb-943c-8a007faf9144":"AppData/508b0291-edd9-4ffb-943c-8a007faf9144.webp","73e559b4-89af-4b75-9f52-93f15a6ba429":"AppData/73e559b4-89af-4b75-9f52-93f15a6ba429.rogueMaterial","71164f2e-d73f-4802-b438-326fed5af9a2":"AppData/71164f2e-d73f-4802-b438-326fed5af9a2.mp3","25832445-4db7-4c19-a710-e64f07a3e7d2":"AppData/25832445-4db7-4c19-a710-e64f07a3e7d2.roguePrefab","2460849b-13d5-454e-85e3-d2f1b0afab95":"AppData/2460849b-13d5-454e-85e3-d2f1b0afab95.mp3","7972a655-3b58-4f6a-9072-2f571da139b2":"AppData/7972a655-3b58-4f6a-9072-2f571da139b2.roguePrefab","c8a0325d-f650-4c17-b40a-6c1b8b163752":"AppData/c8a0325d-f650-4c17-b40a-6c1b8b163752.mp3","a41c5ee8-e17b-4fe0-b3fd-fa07139c1272":"AppData/a41c5ee8-e17b-4fe0-b3fd-fa07139c1272.mp3","8f0ad20f-4c21-4411-afd4-aa85bb6df266":"AppData/8f0ad20f-4c21-4411-afd4-aa85bb6df266.mp3","a8079d43-f184-4a41-a7bc-0abd3770d803":"AppData/a8079d43-f184-4a41-a7bc-0abd3770d803.mp3","5a1e7bc1-8004-4af3-86e4-304328154c75":"AppData/5a1e7bc1-8004-4af3-86e4-304328154c75.mp3","d6890413-3102-47bd-9639-a7d7596b6e02":"AppData/d6890413-3102-47bd-9639-a7d7596b6e02.mp3","a6afa3d0-2986-4ed2-a814-1f8ef038d2e2":"AppData/a6afa3d0-2986-4ed2-a814-1f8ef038d2e2.mp3","501d6286-8ae7-4a06-a28a-69c676d85662":"AppData/501d6286-8ae7-4a06-a28a-69c676d85662.mp3","e3e19e6d-8332-4da0-b842-b891f998e94d":"AppData/e3e19e6d-8332-4da0-b842-b891f998e94d.roguePrefab","2a67047d-1eaf-4a84-ae6d-390ef1314673":"AppData/2a67047d-1eaf-4a84-ae6d-390ef1314673.rogueAnimation","99fd57b0-0a0f-4321-b6fc-4dca61cd315b":"AppData/99fd57b0-0a0f-4321-b6fc-4dca61cd315b.rogueAnimation","01f70a58-7582-444c-8c4a-66329ff09931":"AppData/01f70a58-7582-444c-8c4a-66329ff09931.rogueAnimation","21d19a47-cf75-43b0-bf69-dbf7d276db2e":"AppData/21d19a47-cf75-43b0-bf69-dbf7d276db2e.rogueAnimation","809bd54b-fbb9-40c2-a37a-cafbba813be4":"AppData/809bd54b-fbb9-40c2-a37a-cafbba813be4.png","d487553e-ba60-4013-8726-3c2e16acc636":"AppData/d487553e-ba60-4013-8726-3c2e16acc636.rogueMaterial","a06d6d99-5741-43c8-b7f9-66ca72ab3cbb":"AppData/a06d6d99-5741-43c8-b7f9-66ca72ab3cbb.roguePrefab","2a8eee06-a1ab-45b7-bd42-783b4cabf919":"AppData/2a8eee06-a1ab-45b7-bd42-783b4cabf919.mp3","79096c75-807c-4f51-adf1-14d353550f28":"AppData/79096c75-807c-4f51-adf1-14d353550f28.roguePrefab","eb03030f-dfe4-42dc-a67b-ea0008688dd8":"AppData/eb03030f-dfe4-42dc-a67b-ea0008688dd8.roguePrefab","1eb7f433-a1f7-4b23-9b6a-1e3969759604":"AppData/1eb7f433-a1f7-4b23-9b6a-1e3969759604.mp3","e94bb18d-2871-4ff9-bc11-c300c8dd694c":"AppData/e94bb18d-2871-4ff9-bc11-c300c8dd694c.mp3","d1a036eb-c87d-484e-92fe-d48c8221da03":"AppData/d1a036eb-c87d-484e-92fe-d48c8221da03.png","8b8cc53f-ec8d-4b27-9d20-4216878fb4f2":"AppData/8b8cc53f-ec8d-4b27-9d20-4216878fb4f2.rogueMaterial","a5527603-ddb6-40e3-8f19-1b478705ee60":"AppData/a5527603-ddb6-40e3-8f19-1b478705ee60.png","2e06d724-2c3b-4949-b093-0795e2879d2d":"AppData/2e06d724-2c3b-4949-b093-0795e2879d2d.rogueMaterial","025eab40-ab86-465d-92de-19743ea0b236":"AppData/025eab40-ab86-465d-92de-19743ea0b236.roguePrefab","9819c112-e719-46fa-b61d-afbe212cb868":"AppData/9819c112-e719-46fa-b61d-afbe212cb868.roguePrefab","ec63f79b-5053-4505-a19e-d28fa57ccfd9":"AppData/ec63f79b-5053-4505-a19e-d28fa57ccfd9.roguePrefab","d64037fa-4652-4c34-9214-6c46eca9c333":"AppData/d64037fa-4652-4c34-9214-6c46eca9c333.mp3","41833a87-7c8f-4ebb-b328-6105005fb83e":"AppData/41833a87-7c8f-4ebb-b328-6105005fb83e.roguePrefab","b2a356b6-10e4-46bc-bf2f-76ca48602552":"AppData/b2a356b6-10e4-46bc-bf2f-76ca48602552.roguePrefab","797cbea5-15c5-4f05-8b9e-d585a7719653":"AppData/797cbea5-15c5-4f05-8b9e-d585a7719653.rogueAnimation","d163a618-9a53-4740-bcf6-2782840c9e03":"AppData/d163a618-9a53-4740-bcf6-2782840c9e03.mp3","589b1468-57a2-4679-9003-5930bffef7d5":"AppData/589b1468-57a2-4679-9003-5930bffef7d5.mp3","974c523f-a9d3-4e88-a821-8143ad9a9e9d":"AppData/974c523f-a9d3-4e88-a821-8143ad9a9e9d.roguePrefab","92cb3664-478b-450c-87b2-452503ecc3b9":"AppData/92cb3664-478b-450c-87b2-452503ecc3b9.mp3","c8ad3a11-ef2e-4733-8542-4c96465b88fc":"AppData/c8ad3a11-ef2e-4733-8542-4c96465b88fc.mp3","93114a2c-1660-4095-9fb9-5b3bbf7bcc0b":"AppData/93114a2c-1660-4095-9fb9-5b3bbf7bcc0b.mp3","6b95b137-d502-41c9-9e55-66b768f9f157":"AppData/6b95b137-d502-41c9-9e55-66b768f9f157.mp3","0a23b2b5-dd40-4f1a-b15e-20d60aa40fc9":"AppData/0a23b2b5-dd40-4f1a-b15e-20d60aa40fc9.png","10dfcef8-1e4c-484e-b2bd-042f7395a3db":"AppData/10dfcef8-1e4c-484e-b2bd-042f7395a3db.rogueMaterial","75ce4a5f-0228-4dae-bd2b-d60f064a81a2":"AppData/75ce4a5f-0228-4dae-bd2b-d60f064a81a2.roguePrefab","6ac404f7-62b5-4660-a33f-86addd4e4f2a":"AppData/6ac404f7-62b5-4660-a33f-86addd4e4f2a.mp3","fd569379-693b-4ecc-807d-d3756cfc4c8f":"AppData/fd569379-693b-4ecc-807d-d3756cfc4c8f.rogueMaterial","44a42f0b-cc96-4eab-82c0-75c124162b78":"AppData/44a42f0b-cc96-4eab-82c0-75c124162b78.roguePrefab","e79b4c23-ff0c-4dda-b0bc-dae1584f59d1":"AppData/e79b4c23-ff0c-4dda-b0bc-dae1584f59d1.mp3","0b25ec82-8e7e-4ae3-ae6b-33d662585104":"AppData/0b25ec82-8e7e-4ae3-ae6b-33d662585104.roguePrefab","c0e6ce73-5a0e-4e47-8032-7fe9740edb48":"AppData/c0e6ce73-5a0e-4e47-8032-7fe9740edb48.mp3","739da640-d87f-4c83-9082-a1eb6593b6da":"AppData/739da640-d87f-4c83-9082-a1eb6593b6da.rogueAnimation","ec8046a3-ff1d-47ae-b198-b174716f9e62":"AppData/ec8046a3-ff1d-47ae-b198-b174716f9e62.rogueAnimation","035a623a-0876-4963-be1a-4c611b6071b6":"AppData/035a623a-0876-4963-be1a-4c611b6071b6.mp3","171fcaee-e022-4787-bc61-9297538db3b9":"AppData/171fcaee-e022-4787-bc61-9297538db3b9.roguePrefab","780aebe8-73bc-4715-aa6e-d7c8f2c71d24":"AppData/780aebe8-73bc-4715-aa6e-d7c8f2c71d24.png","3a72165d-f078-4974-8a03-c1cc625acb89":"AppData/3a72165d-f078-4974-8a03-c1cc625acb89.rogueMaterial","dab4cf1f-5fb3-4a64-8f40-f2730a479b92":"AppData/dab4cf1f-5fb3-4a64-8f40-f2730a479b92.png","6d933ac3-433f-4a02-a628-a8b20eab1a37":"AppData/6d933ac3-433f-4a02-a628-a8b20eab1a37.rogueMaterial","2ca25169-d463-441c-a76a-9006e329e8e8":"AppData/2ca25169-d463-441c-a76a-9006e329e8e8.png","6c0835ba-c61b-48f4-8a93-23eb0c7ac419":"AppData/6c0835ba-c61b-48f4-8a93-23eb0c7ac419.rogueMaterial","cd03d3ea-60b7-493d-ab75-3142b18cc527":"AppData/cd03d3ea-60b7-493d-ab75-3142b18cc527.png","5c60732a-ffbc-401a-b073-4d882efa1c85":"AppData/5c60732a-ffbc-401a-b073-4d882efa1c85.rogueMaterial","7a053bc2-9228-4d4a-b242-8791fa39b526":"AppData/7a053bc2-9228-4d4a-b242-8791fa39b526.rogueScene","e2d07b73-2137-4398-9844-25c74970117a":"AppData/e2d07b73-2137-4398-9844-25c74970117a.rogueScene"}});

@@ -225,16 +225,16 @@ export default class DropshipController extends RE.Component {
         this.state = State.Hovering
       } else {
         // RE.Debug.clear()
-        RE.Debug.log(`dropping. btw queue length is ${this.queue.length}, item length is ${this.queue.at(0)?.items.length}`)
+        // RE.Debug.log(`dropping. btw queue length is ${this.queue.length}, item length is ${this.queue.at(0)?.items.length}`)
         if (this.rateLimited) {
-          RE.Debug.log('rate limited')
+          // RE.Debug.log('rate limited')
         } else {
-          RE.Debug.log('actually dropping')
+          // RE.Debug.log('actually dropping')
           // const order = this.queue.splice(0, 1)
 
           const order = this.queue[0]
           const startItemCount = order.items.length
-          RE.Debug.log(`order=${JSON.stringify(order)}`)
+          // RE.Debug.log(`order=${JSON.stringify(order)}`)
 
 
           const item = order.items.shift()
@@ -244,9 +244,9 @@ export default class DropshipController extends RE.Component {
           } else {
             // RE.Debug.log(`item=${item} simulated drop`)
 
-            const itemPrefab = this.warehouse.items.find((m) => m.name === item)
+            const { prefab, container } = this.warehouse.getPrefab(item)
 
-            if (!itemPrefab) {
+            if (!prefab) {
               RE.Debug.logError(`Dropship could not find ${item}. Known items are ${this.warehouse.items.map((i) => i.name).join(', ')}`)
             } else {
               if (this.flySFX) {
@@ -257,8 +257,10 @@ export default class DropshipController extends RE.Component {
                 this.dropSFX.play();
               }
 
+              // @bug @blocking @see https://discord.com/channels/669681919692242954/746385722495467530/1345708197364629535
+              // const itemObject = prefab.instantiate((prefab.name.includes('Kyberpod')) ? this.enemiesContainer : this.itemsContainer)
+              const itemObject = prefab.instantiate((container === 'Enemies') ? this.enemiesContainer : this.itemsContainer)
 
-              const itemObject = itemPrefab.instantiate((itemPrefab.name.includes('Kyberpod')) ? this.enemiesContainer : this.itemsContainer)
               let itemSpawnPoint = this.object3d.position.clone()
               itemSpawnPoint.add(this.getSpreadOffset(order.items.length))
               itemObject.position.copy(itemSpawnPoint)

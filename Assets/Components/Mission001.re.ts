@@ -139,12 +139,12 @@ export default class Mission001 extends RE.Component {
     else if (this.phase === 9) this.waitForEnemyKyberpodsKilled(1);
   }
 
-  public reset() {
-    this.phase = 0
-    this.voiceClips.concat(this.musicClips).forEach((clip) => {
-      if (this[clip]) this[clip].stop()
-    })
-  }
+  // reset() {
+  //   this.phase = 0
+  //   this.voiceClips.concat(this.musicClips).forEach((clip) => {
+  //     if (this[clip]) this[clip].stop()
+  //   })
+  // }
 
   // trigger objects with true .triggered property tell us that the trigger has not been tripped
   triggerExists(name: string) {
@@ -154,12 +154,17 @@ export default class Mission001 extends RE.Component {
     })
   }
 
-  enemyExists(name: string, count: number = 1) {
-    let matches = 0
-    for (let i = 0; i < this.enemiesGroup.children.length; i++) {
-      if (this.enemiesGroup.children[i].name === name) matches++;
-    }
-    if (matches === count) return true;
+  /**
+   * Name is ignored for now. Finding enemies by name doesn't work in the build artifcct due to a bug in RE
+   * @bug @blocking @see https://discord.com/channels/669681919692242954/746385722495467530/1345708197364629535
+   */
+  enemyExists(_name: string, count: number = 1): boolean {
+    // let matches = 0
+    // for (let i = 0; i < this.enemiesGroup.children.length; i++) {
+    //   if (this.enemiesGroup.children[i].name === name) matches++;
+    // }
+    // if (matches === count) return true;
+    if (this.enemiesGroup.children.length === count) return true;
     else return false;
   }
 
@@ -196,10 +201,11 @@ export default class Mission001 extends RE.Component {
     // spawn dropship
 
     const dropshipName = 'BISDropship'
-    const dropshipPrefab = this.bisWarehouse.findItemPrefab(dropshipName)
+    const { prefab: dropshipPrefab } = this.bisWarehouse.getPrefab(dropshipName)
 
+    RE.Debug.log(`items found=${this.bisWarehouse.items.map((i) => i.name).join(', ')} itemNames=${this.bisWarehouse.itemsNames.map((i) => i).join(', ')}`)
     if (!dropshipPrefab) {
-      RE.Debug.logError(`${dropshipName} not found in ${this.bisWarehouse.name}. items found=${this.bisWarehouse.items.map((i) => i.name).join(', ')}`);
+      RE.Debug.logError(`${dropshipName} not found in ${this.bisWarehouse.name}`);
       return
     }
 
@@ -234,13 +240,19 @@ export default class Mission001 extends RE.Component {
     this.phase++
   }
 
+
+
   waitForThreeEnemyKyberpods() {
-    if (!this.enemyExists('EnemyKyberpod', 3)) return;
+    if (!this.enemyExists('EnemyKyberpod', 3)) {
+      RE.Debug.log(`there are ${this.enemiesGroup.children.length} enemies.`)
+      return;
+    }
 
     RE.Debug.log("THREE E KYBERPODSS!!!!! 33333333");
 
     // program the kyberpod task lists
-    let kyberpods = this.enemiesGroup.children.filter((enemy) => enemy.name === "EnemyKyberpod")
+    RE.Debug.log(`enemies=${this.enemiesGroup.children.map((e) => e.name).join(', ')}`)
+    let kyberpods = this.enemiesGroup.children
     kyberpods.forEach((kyberpod) => {
       let npcControllerComponent = RE.getComponent(NPCController, kyberpod)
       npcControllerComponent.resetTasks()
@@ -292,10 +304,11 @@ export default class Mission001 extends RE.Component {
     if (iteration === 0) {
 
       let troyKyberpodName = 'TroyKyberpod'
-      let troyPrefab = this.sfWarehouse.findItemPrefab(troyKyberpodName)
+      let { prefab: troyPrefab, container } = this.sfWarehouse.getPrefab(troyKyberpodName)
       if (!troyPrefab) {
         RE.Debug.logError(`${troyKyberpodName} not found`)
       } else {
+
         let troyObject = troyPrefab.instantiate(this.playersContainer)
         troyObject.position.copy(this.troySpawn)
       }
@@ -306,7 +319,7 @@ export default class Mission001 extends RE.Component {
       this.audioThanksForPlaying.play()
       // @todo show credits
       setTimeout(() => {
-        RE.App.loadScene("game-over")
+        RE.App.loadScene("thanks")
       }, 5000)
     }
     this.phase++
@@ -314,14 +327,16 @@ export default class Mission001 extends RE.Component {
 
   waitForWompratKilled() {
     // either womprat must be dead
-    if (this.enemyExists('SpacePig1') && this.enemyExists('SpacePig2')) return;
+    // if (this.enemyExists('SpacePig1') && this.enemyExists('SpacePig2')) return;  // @bug @blocking @see https://discord.com/channels/669681919692242954/746385722495467530/1345708197364629535
+    if (this.enemyExists('_', 2)) return;
     this.audioWompratMid.play() // "Another one bites the dust"
     this.phase++
   }
 
   waitForWompratsKilled() {
     // both womprats must be dead
-    if (this.enemyExists('SpacePig1') || this.enemyExists('SpacePig2')) return;
+    // if (this.enemyExists('SpacePig1') || this.enemyExists('SpacePig2')) return; // * @bug @blocking @see https://discord.com/channels/669681919692242954/746385722495467530/1345708197364629535
+    if (this.enemyExists('_', 1)) return;
     this.audioWompratEnd.play() // "I'm all cleaned up"
     this.phase++
     // The phase where player kills womprats
